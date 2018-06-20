@@ -3,13 +3,13 @@
 /**
 * The strategy pattern solves potential problems with inheritance, where real world objects
 * of a certain type have multiple methods (algorithms) each of which can have several variations. 
-* The inheritance tree cannot remain simple, in these situations with resorts to duplication
+* In these situations, the inheritance tree cannot remain simple,  with resorts to duplication
 * of method code, or by using multiple inheritance, traits (PHP) or mixins.
 *
-* For example, if we need to create instances of "programmer" objects, and each programmer has
+* For example, let's say we need to create instances of "programmer" objects, where each programmer has
 * different procedures (methods) that depend on language, dev methodology and source control. 
 * The methods have names design(), build() and save(). We can have multiple versions of each method
-* according to the design methodology - Agile, TTD etc, language - php, nodejs etc and source control
+* according to the design methodology - Agile, Scrum etc, language - php, nodejs etc and source control
 * git, sccm etc.
 * One way to solve the problem is to use 3 attributes 
 * int designProc;
@@ -32,9 +32,9 @@ interface IDesign {  // Interface definition for design method (abstract Strateg
     public function design();
 }
 
-class TddDesigner implements IDesign { // Concrete TDDdesign strategy variation
+class ScrumDesigner implements IDesign { // Concrete TDDdesign strategy variation
     public function design(){
-        echo "I am a TDD designer".PHP_EOL;
+        echo "I am a Scrum designer".PHP_EOL;
     }
 }
 
@@ -79,9 +79,9 @@ class SccMSaver implements ISave {// Concrete SccMSave strategy variation
 */
 class Programmer {
 
-    public $designObj;  
-    public $buildObj;
-    public $saveObj;
+    private $designObj;  
+    private $buildObj;
+    private $saveObj;
     
     // the constructor injects the required algorithm (method) variations.
     public function __construct($designObj,$buildObj,$saveObj){
@@ -111,7 +111,7 @@ class Programmer {
 
 // make an object for every possible strategy
 $AgileDesigner = new AgileDesigner;
-$TddDesigner = new TddDesigner;
+$ScrumDesigner = new ScrumDesigner;
 
 $PHPBuilder = new PHPBuilder;
 $NodejsBuilder = new NodejsBuilder;
@@ -122,8 +122,8 @@ $SccMSaver = new SccMSaver;
 // make programmer instances mixing and matching the variations using dependency injection
 $ProgrammerType1 = new Programmer($AgileDesigner,$PHPBuilder,$SccMSaver);
 $ProgrammerType2 = new Programmer($AgileDesigner,$NodejsBuilder,$GitSaver);
-$ProgrammerType3 = new Programmer($TddDesigner,$PHPBuilder,$GitSaver);
-$ProgrammerType4 = new Programmer($TddDesigner,$NodejsBuilder,$SccMSaver);
+$ProgrammerType3 = new Programmer($ScrumDesigner,$PHPBuilder,$GitSaver);
+$ProgrammerType4 = new Programmer($ScrumDesigner,$NodejsBuilder,$SccMSaver);
 
 // let each object exercie its design(), build() and save() methods
 $ProgrammerType1->whoAmI();
