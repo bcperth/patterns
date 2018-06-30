@@ -23,10 +23,10 @@
 // -------------------------------------------------------------------------
 // Define the observable class (using IObserver interface)
 
-interface IObservable {  // Interface definition for Subject
+interface IObservable {  // Interface definition for Subject 
     public function addObserver(timeObserver $observer);       // register an Observer
     public function removeObserver(timeObserver $observer);    // de-register an Observer
-    public function getTime();                                  // send data to all registered Observers
+    public function getTime();                                 // send data on request to an Observer
 }
 
 class TimeServer Implements IObservable {// Observable (Subject) class
