@@ -1,0 +1,3 @@
+This is a CLI program.
+to run version "x" ....
+> php compositeVx.php    (from an open console inside this directory)
