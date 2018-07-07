@@ -1,0 +1,38 @@
+In compositeV2.php we constructed a parse tree manually for the expression
+((a+b)*(c+d))/e. We poked in values for a,b,c,d,e and used the parse tree to 
+evaluate the expression.
+
+In V2 3 we will create a parser using the the shunting yard argorithm to
+create the parse tree automatically. By so doing we should be able to
+evalute any infix expression.
+
+In stage 1 we will avoid catering for associativity and precence by using 
+parenthesis, otherwise evalution will be done left to right on a first come
+first served basis. The exercise is to create the parse tree automatically.
+
+Assume the input is contained in a array of characters.
+
+The "lexer" will recognise tokens (,),+,-,*,/ and NUM-Value
+
+The output of the lexer is contained in an array of token objects.
+
+6+7 should create the tree 
+     +
+    6 7
+
+(6+7) should create the tree
+    ( )
+     +
+(  6   7  )
+
+(6+7)*8 should create the tree
+         *
+    ( )
+     +
+(  6   7  )    8
+
+
+
+
+
+

@@ -140,37 +140,151 @@ class BraceComposite extends Composite
 // ((a+b)*(c+d))/e
 // the order of calculation is a+b then c+d then * sums then / by e
 
-// Note: The steps below create the necessary parse tree to evalute the supplied
-// expression. This parse is obviously done by hand in this case.
-// Normally a parser will take any statement in the language and create the tree 
-// automatically.
+// The Shunting-yard algorithm below creates the unique parse tree to evalute the supplied
+// expression. (The "parse" was done by hand in composite)
+
+class Token {
+    public $tokenName;
+    public $tokenValue;
+
+    // the constructor initialises
+    public function __construct($name,$value)
+    {
+        $this->tokenName = $name;
+        $this->tokenValue = $value;
+    }
+}
+
+$output = array();        // array to contain the output in reverse-polish 
+$operatorStack = array(); // the operator stack for the Shunting yard
+$inTokens = array();      // this contains the lexers output
+
+// tokenised version of ((6+7)*(8+9))/2 
+$inTokens[] = new Token('(',null);
+
+$inTokens[] = new Token('(',null);
+$inTokens[] = new Token('N',2);   // N for number
+$inTokens[] = new Token('O','+');  // O for operator ( can be any of +,-,*,/)
+$inTokens[] = new Token('N',3);
+$inTokens[] = new Token(')',null);
+
+$inTokens[] = new Token('O','*');
+
+$inTokens[] = new Token('(',null);
+$inTokens[] = new Token('N',4);   // N for number
+$inTokens[] = new Token('O','+');  // O for operator ( can be any of +,-,*,/)
+$inTokens[] = new Token('N',5);
+$inTokens[] = new Token(')',null);
+
+$inTokens[] = new Token(')',null);
+
+$inTokens[] = new Token('O','/');
+$inTokens[] = new Token('N',2);
 
 
-// create the nodes
-// Leaf objects for not value terminals
-$plus = new Leaf("+");
-$times = new Leaf("*");
-$divide = new Leaf("/");
-$lb = new Leaf("(");
-$rb = new Leaf(")");
+//print_r($inTokens);
 
-// now create value terminals and composites to execute ((a+b)*(c+d))/e
-$a = new Leaf(113);
-$b = new Leaf(57);
-$sum1 = new TwoOperandComposite($a,$plus,$b);  // a+b
-$expr1 = new BraceComposite($lb,$sum1,$rb);    // (a+b)
+// now do the shunt yard thing
+// Note we are creating the reverse polish version of the expression
+// AND we are also creating the parse tree. 
+foreach($inTokens as $token){
+    switch ($token->tokenName){
+        case 'N':   // if token is a number then output its value
+            $output[] = $token;
+            break;  
+        case 'O':   // if token is an operator first...
+            // pop any (higher precedence) operators from the stack to the output
+            if (count($operatorStack)>0){
+                $stackTopToken = array_pop($operatorStack);
+                if ($stackTopToken->tokenName == 'O'){
+                    $output[] = $stackTopToken;    // output the operator
+                }
+                else {
+                    array_push($operatorStack,$stackTopToken);     // not an operator so put back on the stack
+                }   
+            }
+            // ... then push the operator     
+            array_push($operatorStack,$token);
+            break;
+        case '(':   // if token is '(' then push on operator stack
+            array_push($operatorStack,$token);
+            break;
+        case ')':   // if token is ')' then 
+                    // pop operators to the output until '(' is reached
+                    // output '('
+                    // output ')'
+            $openBraceFound = false;    
+            while (count($operatorStack) > 0){
+                $operator = array_pop($operatorStack);
+                if ($operator->tokenName == '('){
+                    $output[] = $operator;     // '('
+                    $output[] = $token;        // ')'
+                    $openBraceFound=true;
+                    break;   // exit the loop when opening bracket is found
+                }
+                else {
+                    $output[] = $operator; // pop operators to the output until '(' is reached
+                }
+            } 
+            if (! $openBraceFound){
+                $output[] = "error";
+            }       
+            break;    
+    } // end switch
+} // end foreach
 
-$c = new Leaf(-456.98);
-$d = new Leaf(364.77);
-$sum2 = new TwoOperandComposite($c,$plus, $d); // c+d
-$expr2 = new BraceComposite($lb,$sum2,$rb);     // (c+d)
+// while there are still operators on the stack pop them to the output queue
+while (count($operatorStack)>0){
+    $output[] = array_pop($operatorStack);
+}
+echo "Input as infix expression....".PHP_EOL;
+foreach($inTokens as $in){
+    echo $in->tokenName." ".$in->tokenValue.PHP_EOL;
+}
+echo "Input converted to reverse polish...".PHP_EOL;
+//print_r($output);
+foreach($output as $out){
+    echo $out->tokenName." ".$out->tokenValue.PHP_EOL;
+}
 
-$prod = new TwoOperandComposite($expr1,$times, $expr2); // (a+b)*(c+d)
-$expr3 = new BraceComposite($lb,$prod,$rb);             // ((a+b)*(c+d))
+$nodeBuilder=[];
 
-$d = new Leaf(37.99); 
-$expr4 = new TwoOperandComposite($expr3,$divide, $d);  // ((a+b)*(c+d))/e
+// now build the parse tree (Could have done this during parse?)
+// This code blindly assumes that:
+//    operators are binary and when we find one we can confidently pop 2 values
+//    breaces are in apirs and when we find them we can confidently pop 1 value
+foreach ($output as $token){
 
-// Tell the top node to process()
-$result = $expr4->processNode();  // should traverse the tree and print result
+    switch ($token->tokenName){
+        case  'N':
+            array_push($nodeBuilder, new Leaf($token->tokenValue));
+            break;
+        case 'O':
+            $v2 = array_pop($nodeBuilder);
+            $v1 = array_pop($nodeBuilder);
+            $op  = new Leaf($token->tokenValue);
+            $newNode = new TwoOperandComposite($v1,$op,$v2);
+            array_push($nodeBuilder, $newNode);
+            break;
+        case '(':
+            array_push($nodeBuilder, new Leaf('(') ); 
+            break;
+        case ')':
+            $lb = array_pop($nodeBuilder); 
+            $v1 = array_pop($nodeBuilder);   // hopefully evaluates to a number! 
+            $rb = new Leaf(')');
+            $newNode = new BraceComposite($lb,$v1,$rb);
+            array_push($nodeBuilder, $newNode);     
+    }
+}
+
+echo "size of nodebuilder array is ".count($nodeBuilder).PHP_EOL;
+
+$parseTree = array_pop($nodeBuilder);
+
+$result = $parseTree->processNode();
 echo " = ".$result.PHP_EOL;
+
+/*
+
+*/
