@@ -44,65 +44,52 @@
  * The lexer and parser male be able to use other patterns ...
  */
 // -------------------------------------------------------------------------
-// Define an iterface to be implemented in every node
+/** Define an iterface to be implemented in every node
+* Here is the "language" description - traditional infix expressions
+* <E> ::= <E> + <E> | <E> - <E> | <E> * <E> | <E> / <E> | <E> ^ <E>     (Rule 1)
+*     ::= sin(<E>) | cos(<E>) | tan(<E>)                                (Rule 2)
+*     ::= ( <E> )                                                       (Rule 3)
+*     ::= UNARYMINUS <E>                                                (Rule 5) Unary minus not implemented yet
+*     ::= <E> !                                                         (Rule 6) Factorial not Implemented yet
+*     ::= Number  (float or Integer or pi)                              (Rule 4)
+* 
+*  ACcording to Composite patter, make a class to represent specific nodes for each rule
+*  Terminal symbols and Numbers are represented by leaf nodes. (rule 4)
+*  Composite nodes do the actual calculations - with a class for each treatment of operands
+*  All classed implement the same interface IProcess   (could be better called IEvaluate)
+*/
 
+// Interface definition
 interface IProcess
 {
-                 // Interface definition
     public function processNode();   // process the node
 }
 
-// define an abstract leaf class
-class Leaf implements IProcess
-{
-    private $value;   // can be a numeric value or one of the terminals
-
-    public function __construct($value)
-    {
-        // the constructor just sets the value
-        $this->value = $value;
-    }
-
-    public function processNode()
-    {
-        // a terminal is printed out when accessed
-        // after execution you will see the full expression printed
-        // correctly as ((a+b)*(c+d))/e  ( with value for a,b,c,d,e as hardcoded below)
-        // .. showing that left order in which the termianl are accessed
-        // ie all composites process children in left, middle, right order
-        echo $this->value;  
-        return $this->value;
-    } // implementing IProcess
-}
-
-// Create the abstract class for the Composite nodes
+// Abstract class for the Composite nodes
 abstract class Composite Implements IProcess
 {
-    // The parse tree 
-    protected $leftChild;   // reference to left child
-    protected $midChild;    // reference to mid child
-    protected $rightChild;  // reference to right child
+    // References to child nodes  
+    protected $leftChild;
+    protected $midChild;
+    protected $rightChild;
 
-    // the constructor links its 2 children
+    // the constructor establishes the links
     public function __construct($leftChild,$midChild,$rightChild)
     {
         $this->leftChild = $leftChild;
         $this->midChild = $midChild;
         $this->rightChild = $rightChild;
     }
-    abstract public function processNode(); // process the node
+    // This is where the calculation is done
+    abstract public function processNode(); 
 }
 
-// there are 4 types possible of composite nodes
-// value operator value, leftBrace value rightBrace, operator value, value operator 
-// but we only need "value operator value" and "leftBrace value rightBrace"
-
-// define the "value operator value" composite
+// Rule 1: Represents (E op E) where op is in (+,-,*,/,^)
 class TwoOperandComposite extends Composite
 {
     public function processNode()
     {
-        // returns product of 2 children
+        // retrieve the left and right children and do the required operation
         $val1     =  $this->leftChild->processNode();   // returns a value
         $operator =  $this->midChild->processNode();    // the operator
         $val2     =  $this->rightChild->processNode();  // returns a value
@@ -112,6 +99,9 @@ class TwoOperandComposite extends Composite
             $result = $val1 * $val2;
             break;
         case "/":
+            if ($val2 < 0.000000001){
+                echo "warning: divide by zero encountered".PHP_EOL;
+            }
             $result = $val1 / $val2;
             break;
         case "+":
@@ -119,54 +109,70 @@ class TwoOperandComposite extends Composite
             break;
         case "-":
             $result = $val1 - $val2;
-            break;   
+            break;
+        case "^":
+            $result = pow($val1,$val2);  // gives $val1 ^ $val2
+            break;
         }
         return($result);
         //return ($this->child1->processNode() * $this->child2->processNode());
     }
 }
 
-// define the "leftBrace operator RightBrace" composite
+// Rule 2: Represents 'fun(E)' where fun in (sin, cos, tan)
+class FunctionComposite extends Composite
+{
+    public function processNode()
+    {
+        // returns product of 2 children
+        $function =  $this->midChild->processNode();    // returns the function
+        $val1     =  $this->leftChild->processNode();  // returns a value
+        $result = 0;
+        switch($function){
+        case "sin":
+            $result = sin($val1);
+            break;
+        case "cos":
+            $result = cos($val1);
+            break;
+        case "tan":
+            $result = tan($val1);
+            break;
+        }
+        return($result);
+    }
+}
+
+// Rule 3: Represents braced expressions ie '(' E ')'
 class BraceComposite extends Composite
 {
     public function processNode()
     {
         // returns the value between braces
-        $this->leftChild->processNode();
-        $result     =  $this->midChild->processNode();  // returns a value
-        $this->rightChild->processNode();
+        $this->leftChild->processNode();           // force the '(' to be echoed (can be ommitted)
+        $result = $this->midChild->processNode();  // returns a value
+        $this->rightChild->processNode();          // force the ')' to be echoed (can be ommitted)
         return $result;
-        //return ($this->child1->processNode() * $this->child2->processNode());
     }
+}
+
+// Rule 4:  represents ('Number') and all terminal symbols - (+,-,*,/,^,'(',')',sin, cos, tan)
+class Leaf implements IProcess
+{
+    private $value;   // can be a numeric value or one of the terminals
+    // the constructor initialises the value
+    public function __construct($value)
+    {
+        $this->value = $value;
+    }
+    public function processNode()
+    {
+        echo $this->value;       // echoing terminals verifies the order of processing (cam be omitted)
+        return $this->value;     // value is either a Number or other terminal
+    } // implementing IProcess
 }
 
 //---------------------------------------------------------------------
-// Construct the tree by creating the nodes and linking them to get evaluate correctly
-// ((a+b)*(c+d))/e
-// the order of calculation is a+b then c+d then * sums then / by e
-
-// The Shunting-yard algorithm below creates the unique parse tree to evalute the supplied
-// expression. (The "parse" was done by hand in composite)
-
-class Token {
-    public $tokenName;
-    public $tokenValue;
-
-    // the constructor initialises
-    public function __construct($name,$value)
-    {
-        $this->tokenName = $name;
-        $this->tokenValue = $value;
-    }
-}
-
-// these are the arrays 
-$input = "";         // input expression
-$output = [];        // Array to contain the parse output in reverse-polish 
-$operatorStack = []; // the operator stack for the Shunting-yard algorithm
-$inTokens = [];      // this contains the lexers output
-$nodeBuilder = [];   // used to construct parse tree. Contains head node after parse
-
 // Step 1 - construct the "lexer"
 // it will recognise:
 // Numbers (floats or ints)    : outputs N token with value = numeric value
@@ -177,13 +183,31 @@ $nodeBuilder = [];   // used to construct parse tree. Contains head node after p
 // Right Brace )               : outputs ) token
 // unrecognised                : outputs ERR token with value of unrecognised input
 
-$input = "((2+3)*(4+5))/2";       // input expression 
-$pos=0;
+// All tokens will have a name and a value 
+class Token {
+    public $tokenName;
+    public $tokenValue;
+
+    // the constructor initialises name and value
+    public function __construct($name,$value)
+    {
+        $this->tokenName = $name;
+        $this->tokenValue = $value;
+    }
+}
+
+// these items are used by the Lexer 
+$input = "";         // input expression
+$inTokens = [];      // lexers output as an array of Token object (for input to parser)
+
+// Pick an expression and start lexing!
+$input = "((2+3)*sin(pi/2))^9^.5";       // input expression 
+$pos=0;                   // $pos move left to right through the input
 $len = strlen($input);
-// main processing loop
+// process each character of the expression and convert to token
 while ($pos < $len){
-    // first test for a number (possibly multidigit) at this position
-    if (preg_match("/^[0-9]*\.?[0-9]+/",substr($input,$pos),$match)){  
+    // first for a number (possibly multidigit) starting at this position
+    if (preg_match("/^[0-9]*\.?[0-9]+/",substr($input,$pos),$match)){  // regex for floats and integers
         // Found number, is at $match[0]
         $inTokens[] = new Token('N',$match[0]); // create the token
         $pos+= strlen($match[0]);               //advance past the string
@@ -191,95 +215,127 @@ while ($pos < $len){
     }
 
     // Not a number so look for non-numeric tokens
-    $ch = $input[$pos++];
-    if ($ch == null) break;     // no more chars left
- 
+    $ch = $input[$pos];
     switch ($ch)
     {
         case '(':
-            $inTokens[] = new Token('(',null);
-            break;
         case ')':
-            $inTokens[] = new Token(')',null);
+            $inTokens[] = new Token($ch,null);
             break;
         case '+':
-            $inTokens[] = new Token('O','+');
-            break;
         case '-':
-            $inTokens[] = new Token('O','-');
-            break;
         case '*':
-            $inTokens[] = new Token('O','*');
-            break;
-        case '/':
-            $inTokens[] = new Token('O','/');
-            break;            
+        case '/':        
         case '^':  // is right associative 2^3^4 = 2^(3^4)
-            $inTokens[] = new Token('O','^');
+            $inTokens[] = new Token('O',$ch);
             break;
         case 's':
         case 'c':
         case 't':
-            $threeLetterFun = $ch.$input[$pos].$input[$pos+1];
-            switch ($threeLetterFun) 
+            $threeLetterFunc = $ch.$input[$pos+1].$input[$pos+2];
+            switch ($threeLetterFunc) 
             {
                 case "sin":
-                    $inTokens[] = new Token('F','SIN'); 
-                    $pos+=2;
-                    break;
                 case "cos":
-                    $inTokens[] = new Token('F','COS');
-                    $pos+=2; 
-                    break;
                 case "tan":
-                    $inTokens[] = new Token('F','TAN');
-                    $pos+=2;
+                    $inTokens[] = new Token('F',$threeLetterFunc);
+                    $pos+=2;  // skip next 2 letters
                     break;
                 default:
-                    $inTokens[] = new Token('ERR',$pos-1);
-                    break;           
+                    $inTokens[] = new Token('ERR',$ch." ".$pos); 
+                    break;                
             }
+            break;
+        case 'p':
+            $twoLetterConstant = $ch.$input[$pos+1];
+            if ($twoLetterConstant == "pi")
+            {
+                $inTokens[] = new Token('N',3.141592653589793238);
+                $pos+=1;  // skip next letter
+            }
+            else
+            {
+                $inTokens[] = new Token('ERR',$ch." ".$pos); 
+            }
+            break;
         case ' ' :  // skip spaces
         case "\t":  // skip tabs
             break;             
         default:
-            $inTokens[] = new Token('ERR',$pos-1); // everything else is an error 
+            $inTokens[] = new Token('ERR',$ch." ".$pos); // everything else is an error 
             break;     
     } // end switch
+    $pos++;  // move to next character
 } // end lexer
 
-$lexErrors = 0;
+//echo "lex done".PHP_EOL;
+//echo "input expression .....".PHP_EOL;              // the input expression
+//echo $input;
+//echo PHP_EOL;
+//
+//echo "Tokenised after lex ....".PHP_EOL;            // Tokenised
+//foreach($inTokens as $in){
+//    echo $in->tokenName." ".$in->tokenValue." ";
+//}
+//echo PHP_EOL;
+
+// Report any lex errors
+$lexErrors = [];
 foreach($inTokens as $token){
     if ($token->tokenName == "ERR"){
-        echo "Unrecognised token at position".$token->tokenValue.PHP_EOL;
-        $lexErrors++;
+        $lexErrors[]="Unrecognised token :".$token->tokenValue;
     }    
 }
-if ($lexErrors > 0) {
-    echo "Input string is not a conforming expression".PHP_EOL;
+
+if (count($lexErrors) > 0) {
+    foreach($lexErrors as $lexError) echo $lexError.PHP_EOL;
     return;
 }
+
+//echo "lex errors found ".count($lexErrors).PHP_EOL;
+//echo "starting parse on ".count($inTokens)." tokens".PHP_EOL;
 
 // Now do the shunt yard alorithm
 // Note: The parse converts to reverse Polish expression
 // Note: Parse Tree is then easily built from this 
+$operatorStack = []; // the operator stack used by Shunting-yard algorithm
+$output=[];          // the input expression converted to Reverse Polish after parse
+// a table of operators and their precedence and associativity'
+$op['+'] = ['prec' => 1, 'assoc' => 'left'];
+$op['-'] = ['prec' => 1, 'assoc' => 'left'];
+$op['*'] = ['prec' => 2, 'assoc' => 'left'];
+$op['/'] = ['prec' => 3, 'assoc' => 'left'];
+$op['^'] = ['prec' => 4, 'assoc' => 'right']; 
+
 foreach($inTokens as $token){
     switch ($token->tokenName){
-        case 'N':   // if token is a number then output its value
+        case 'N':   // if a number then output it
             $output[] = $token;
-            break;  
-        case 'O':   // if token is an operator first...
-            // pop any (higher precedence) operators from the stack to the output
-            if (count($operatorStack)>0){
-                $stackTopToken = array_pop($operatorStack);
-                if ($stackTopToken->tokenName == 'O'){
-                    $output[] = $stackTopToken;    // output the operator
+            break;
+        case 'F':   // if a function then push it on the operator stack
+            array_push($operatorStack,$token);
+            break;
+        case 'O':   
+            // if the stack is not empty we need to first pop off functions and higher precedence ops
+            while(count($operatorStack)>0){   
+                $poppedTok = array_pop($operatorStack);
+                if ( $poppedTok->tokenName == 'F' ||
+                    $poppedTok->tokenName == 'O'&& (
+                        $op[$poppedTok->tokenValue]['prec'] >  $op[$token->tokenValue]['prec'] ||
+                        ($op[$poppedTok->tokenValue]['prec'] == $op[$token->tokenValue]['prec'] && $op[$poppedTok->tokenValue]['assoc'== 'left'])
+                    )) 
+                {
+                    // it meets one of the criteria for outputting
+                    $output[] = $poppedTok;
                 }
-                else {
-                    array_push($operatorStack,$stackTopToken);     // not an operator so put back on the stack
-                }   
-            }
-            // ... then push the operator     
+                else
+                {   // does not meet criteria for outputing so push it back 
+                    array_push($operatorStack,$poppedTok);
+                    break; // and exit loop
+                }
+            } // end while
+
+            // we have done popping any higher operators so we can now push this new one/     
             array_push($operatorStack,$token);
             break;
         case '(':   // if token is '(' then push on operator stack
@@ -314,23 +370,11 @@ while (count($operatorStack)>0){
     $output[] = array_pop($operatorStack);
 }
 // end of shunt-yard parse
+echo "parse done".PHP_EOL;
 
-echo "input expression .....".PHP_EOL;
-echo $input.PHP_EOL;
-echo "Tokenised after lex ....".PHP_EOL;
-foreach($inTokens as $in){
-    echo $in->tokenName." ".$in->tokenValue." ";
-}
-echo PHP_EOL."Reverse polish after parse...".PHP_EOL;
-foreach($output as $out){
-    echo $out->tokenName." ".$out->tokenValue." ";
-}
-echo PHP_EOL;
-
-// now build the parse tree (maybe later build tree during parse?)
-// This code blindly assumes that:
-//    operators are binary so when we find one we can confidently pop 2 values
-//    breaces are in apirs so when we find them we can confidently pop 1 value
+// now build the parse tree (maybe later build this part into the parse?)
+// This code blindly assumes that the parse went well!
+$nodeBuilder = [];   // used to construct parse tree. Contains head node after parse
 foreach ($output as $token){
 
     switch ($token->tokenName){
@@ -344,6 +388,12 @@ foreach ($output as $token){
             $newNode = new TwoOperandComposite($v1,$op,$v2);
             array_push($nodeBuilder, $newNode);
             break;
+        case 'F':
+            $v1 = array_pop($nodeBuilder);
+            $fn = new Leaf($token->tokenValue);
+            $newNode = new FunctionComposite($v1,$fn,null);
+            array_push($nodeBuilder, $newNode);
+            break;    
         case '(':
             array_push($nodeBuilder, new Leaf('(') ); 
             break;
@@ -362,11 +412,26 @@ if (count($nodeBuilder) <> 1)
           have exacly 1 node, but has:".count($nodeBuilder).PHP_EOL;
 }
 
+// now print out what happened
+echo "input expression .....".PHP_EOL;              // the input expression
+echo $input;
+echo PHP_EOL;
+
+echo "Tokenised after lex ....".PHP_EOL;            // Tokenised
+foreach($inTokens as $in){
+    echo $in->tokenName." ".$in->tokenValue." ";
+}
+echo PHP_EOL;
+
+echo "Reverse polish after parse...".PHP_EOL;       // in Reverse Polish
+foreach($output as $out){
+    echo $out->tokenName." ".$out->tokenValue." ";
+}
+echo PHP_EOL;
+
+// now do the actual expression evalation by traversing the parse tree
+// and evaluation each node recursively
 $parseTree = array_pop($nodeBuilder);
 echo "Evaluation via composite pattern tree...".PHP_EOL;
 $result = $parseTree->processNode();
 echo " = ".$result.PHP_EOL;
-
-/*
-
-*/
