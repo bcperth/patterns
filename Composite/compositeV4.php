@@ -49,7 +49,7 @@
 * <E> ::= <E> + <E> | <E> - <E> | <E> * <E> | <E> / <E> | <E> ^ <E>     (Rule 1)
 *     ::= sin(<E>) | cos(<E>) | tan(<E>)                                (Rule 2)
 *     ::= ( <E> )                                                       (Rule 3)
-*     ::= UNARYMINUS <E>                                                (Rule 5) Unary minus not implemented yet
+*     ::= UNARYMINUS <E>                                                (Rule 5) 
 *     ::= <E> !                                                         (Rule 6) Factorial not Implemented yet
 *     ::= Number  (float or Integer or pi)                              (Rule 4)
 * 
@@ -119,12 +119,12 @@ class TwoOperandComposite extends Composite
     }
 }
 
-// Rule 2: Represents 'fun(E)' where fun in (sin, cos, tan)
+// Rule 2: Represents 'fun(E)' where fun in (sin, cos, tan ... any any additionals)
 class FunctionComposite extends Composite
 {
     public function processNode()
     {
-        // returns product of 2 children
+        // returns mapping of x->fn(x)
         $function =  $this->midChild->processNode();    // returns the function
         $val1     =  $this->leftChild->processNode();  // returns a value
         $result = 0;
@@ -167,11 +167,36 @@ class Leaf implements IProcess
     }
     public function processNode()
     {
-        echo $this->value;       // echoing terminals verifies the order of processing (cam be omitted)
+        if ($this->value =='u')
+        {
+            echo '-'; // for unary minus
+        }
+        else{
+            echo $this->value;       // echoing terminals verifies the order of processing (cam be omitted) 
+        }
         return $this->value;     // value is either a Number or other terminal
     } // implementing IProcess
 }
 
+// Rule 5: One operand operators (initially only Unary Minus)
+class OneOperandComposite extends Composite
+{
+    public function processNode()
+    {
+        // returns product of 2 children
+        $op   =  $this->midChild->processNode();    // returns the operator
+        $val1 =  $this->leftChild->processNode();   // returns a value
+        $result = 0;
+        switch($op){
+        case 'u':
+            $result = -$val1;
+            break;
+        default:
+            $result = $val1; // no op
+        }
+        return($result);
+    }
+}
 //---------------------------------------------------------------------
 // Step 1 - construct the "lexer"
 // it will recognise:
@@ -202,6 +227,8 @@ $inTokens = [];      // lexers output as an array of Token object (for input to 
 
 // Pick an expression and start lexing!
 $input = "((2+3)*sin(pi/2))^9^.5";       // input expression 
+$input = "-6^-0.5";       // input expression 
+//$input = "---sin(--pi/2)";       // input expression
 $pos=0;                   // $pos move left to right through the input
 $len = strlen($input);
 // process each character of the expression and convert to token
@@ -213,7 +240,6 @@ while ($pos < $len){
         $pos+= strlen($match[0]);               //advance past the string
         continue;
     }
-
     // Not a number so look for non-numeric tokens
     $ch = $input[$pos];
     switch ($ch)
@@ -222,8 +248,22 @@ while ($pos < $len){
         case ')':
             $inTokens[] = new Token($ch,null);
             break;
+        case '-':  // test for UNARY MINUS
+            if (count($inTokens)==0){ // if first token is '-', must be UnaryMinus
+                $inTokens[] = new Token('U','u');
+                break;
+            }
+            $prevToken = $inTokens[count($inTokens)-1]; // read the previous token
+            if ($prevToken->tokenName == '(' ||         // must be unary after '('
+                $prevToken->tokenName == 'O' ||         // must be unary after any binary operator
+                $prevToken->tokenName == 'U' )          // must be unary after any Unary operator
+            {  
+                $inTokens[] = new Token('U','u');
+                break;
+            }
+            // if not unary then keep going - ie no break here.
         case '+':
-        case '-':
+        case '-':  // we reached here so must be binary operator minus
         case '*':
         case '/':        
         case '^':  // is right associative 2^3^4 = 2^(3^4)
@@ -299,67 +339,80 @@ if (count($lexErrors) > 0) {
 // Note: The parse converts to reverse Polish expression
 // Note: Parse Tree is then easily built from this 
 $operatorStack = []; // the operator stack used by Shunting-yard algorithm
-$output=[];          // the input expression converted to Reverse Polish after parse
+$outTokens=[];          // the input expression converted to Reverse Polish after parse
 // a table of operators and their precedence and associativity'
 $op['+'] = ['prec' => 1, 'assoc' => 'left'];
 $op['-'] = ['prec' => 1, 'assoc' => 'left'];
 $op['*'] = ['prec' => 2, 'assoc' => 'left'];
-$op['/'] = ['prec' => 3, 'assoc' => 'left'];
-$op['^'] = ['prec' => 4, 'assoc' => 'right']; 
+$op['/'] = ['prec' => 2, 'assoc' => 'left']; 
+$op['^'] = ['prec' => 3, 'assoc' => 'right']; 
+$op['u'] = ['prec' => 4, 'assoc' => 'right'];   // needs adjustment in code ^ so that -2^2 evaluates as -(2^2)
 
 foreach($inTokens as $token){
     switch ($token->tokenName){
         case 'N':   // if a number then output it
-            $output[] = $token;
+            $outTokens[] = $token;
             break;
         case 'F':   // if a function then push it on the operator stack
             array_push($operatorStack,$token);
             break;
-        case 'O':   
-            // if the stack is not empty we need to first pop off functions and higher precedence ops
-            while(count($operatorStack)>0){   
-                $poppedTok = array_pop($operatorStack);
-                if ( $poppedTok->tokenName == 'F' ||
-                    $poppedTok->tokenName == 'O'&& (
-                        $op[$poppedTok->tokenValue]['prec'] >  $op[$token->tokenValue]['prec'] ||
-                        ($op[$poppedTok->tokenValue]['prec'] == $op[$token->tokenValue]['prec'] && $op[$poppedTok->tokenValue]['assoc'== 'left'])
-                    )) 
+        case 'O': 
+        case 'U':  
+            // if the op stack is not empty, first pop and output functions and higher precedence ops
+            while(count($operatorStack)>0){
+                // pop operator and test    
+                $popTok = array_pop($operatorStack);
+                $popName = $popTok->tokenName;
+                $popValue = $popTok->tokenValue;
+
+                // first: conditionally swap the precedence of UnaryMinus and ^ to make -x^y evaluate as -(x^y) instead of (-x)^y
+                if (($popValue == 'u') && ($token->tokenValue == '^'))
                 {
-                    // it meets one of the criteria for outputting
-                    $output[] = $poppedTok;
-                }
-                else
-                {   // does not meet criteria for outputing so push it back 
-                    array_push($operatorStack,$poppedTok);
+                    // does not meet criteria for outputing so push it back 
+                    array_push($operatorStack,$popTok);
                     break; // and exit loop
                 }
+                else
+                { 
+                    if ( $popName == 'F' ||  // its a function
+                        ($popName == 'O' || $popName == 'U') && (  // Its an operator
+                            $op[$popValue]['prec'] >  $op[$token->tokenValue]['prec'] ||  // and its higher precedence
+                            // or same precedence and right associative
+                            ($op[$popValue]['prec'] == $op[$popValue]['prec'] && $op[$popValue]['assoc']== 'left')
+                        )) 
+                    {
+                        // it meets one of the criteria for outputting
+                        $outTokens[] = $popTok;
+                    }
+                    else
+                    {   // does not meet criteria for outputing so push it back 
+                        array_push($operatorStack,$popTok);
+                        break; // and exit loop
+                    }
+                }
             } // end while
-
-            // we have done popping any higher operators so we can now push this new one/     
+            // we have done popping any higher operators so we can now push the new token    
             array_push($operatorStack,$token);
             break;
         case '(':   // if token is '(' then push on operator stack
             array_push($operatorStack,$token);
             break;
-        case ')':   // if token is ')' then 
-                    // pop operators to the output until '(' is reached
-                    // output '('
-                    // output ')'
+        case ')':   // if token is ')' then pop operators to the output until '(' is reached                
             $openBraceFound = false;    
             while (count($operatorStack) > 0){
-                $operator = array_pop($operatorStack);
-                if ($operator->tokenName == '('){
-                    $output[] = $operator;     // '('
-                    $output[] = $token;        // ')'
+                $operator = array_pop($operatorStack);  
+                if ($operator->tokenName == '('){ // '(' is reached
+                    $outTokens[] = $operator;     // output '('
+                    $outTokens[] = $token;        // output ')'
                     $openBraceFound=true;
                     break;   // exit the loop when opening bracket is found
                 }
                 else {
-                    $output[] = $operator; // pop operators to the output until '(' is reached
+                    $outTokens[] = $operator; // pop operators to the output until '(' is reached
                 }
             } 
             if (! $openBraceFound){
-                $output[] = "error";
+                $outTokens[] = "error";
             }       
             break;    
     } // end switch
@@ -367,7 +420,7 @@ foreach($inTokens as $token){
 
 // while there are still operators on the stack pop them to the output queue
 while (count($operatorStack)>0){
-    $output[] = array_pop($operatorStack);
+    $outTokens[] = array_pop($operatorStack);
 }
 // end of shunt-yard parse
 echo "parse done".PHP_EOL;
@@ -375,20 +428,26 @@ echo "parse done".PHP_EOL;
 // now build the parse tree (maybe later build this part into the parse?)
 // This code blindly assumes that the parse went well!
 $nodeBuilder = [];   // used to construct parse tree. Contains head node after parse
-foreach ($output as $token){
+foreach ($outTokens as $token){
 
     switch ($token->tokenName){
-        case  'N':
+        case  'N': // number
             array_push($nodeBuilder, new Leaf($token->tokenValue));
             break;
-        case 'O':
+        case 'U':  // unary operator
+            $v1 = array_pop($nodeBuilder);
+            $op  = new Leaf($token->tokenValue);
+            $newNode = new OneOperandComposite($v1,$op,null);
+            array_push($nodeBuilder, $newNode);
+            break;           
+        case 'O': // binary operator
             $v2 = array_pop($nodeBuilder);
             $v1 = array_pop($nodeBuilder);
             $op  = new Leaf($token->tokenValue);
             $newNode = new TwoOperandComposite($v1,$op,$v2);
             array_push($nodeBuilder, $newNode);
             break;
-        case 'F':
+        case 'F': // function
             $v1 = array_pop($nodeBuilder);
             $fn = new Leaf($token->tokenValue);
             $newNode = new FunctionComposite($v1,$fn,null);
@@ -403,13 +462,13 @@ foreach ($output as $token){
             $rb = new Leaf(')');
             $newNode = new BraceComposite($lb,$v1,$rb);
             array_push($nodeBuilder, $newNode);     
-    }
-}
+    } // end switch
+} // end foreach
 
 if (count($nodeBuilder) <> 1)
 {
-    echo "Parse did not terinate: \$nodeBuilder should 
-          have exacly 1 node, but has:".count($nodeBuilder).PHP_EOL;
+    echo "Parse did not terminate: \$nodeBuilder should have exactly 1 node, but has:"
+          .count($nodeBuilder).PHP_EOL;
 }
 
 // now print out what happened
@@ -418,14 +477,14 @@ echo $input;
 echo PHP_EOL;
 
 echo "Tokenised after lex ....".PHP_EOL;            // Tokenised
-foreach($inTokens as $in){
-    echo $in->tokenName." ".$in->tokenValue." ";
+foreach($inTokens as $token){
+    echo $token->tokenName." ".$token->tokenValue." ";
 }
 echo PHP_EOL;
 
-echo "Reverse polish after parse...".PHP_EOL;       // in Reverse Polish
-foreach($output as $out){
-    echo $out->tokenName." ".$out->tokenValue." ";
+echo "Reverse Polish after parse...".PHP_EOL;       // in Reverse Polish
+foreach($outTokens as $token){
+    echo $token->tokenName." ".$token->tokenValue." ";
 }
 echo PHP_EOL;
 
