@@ -15,10 +15,10 @@
  * way. Decorator is a "functional" pattern, with recognisable use cases. Composite is a "structural" pattern,
  * used to create trees and traverse those trees in a transparent manner.
  * 
- * Comparison to Interpreter. It would seem that the Interpreter pattern is a specific "use case" of
+ * Comparison to Interpreter. It would seem that the Interpreter pattern is "use case" of
  * the Composite pattern. ie the tree structures created are exactly the same. The idea with Interpreter
  * is to create a variation of the composite class for each derivation rule (ref BNF) of the language.
- * Leaf nodes correspond to terminal symboys - and composite nodes correspond to non-termminals.
+ * Leaf nodes correspond to terminal symbols - and composite nodes correspond to non-termminals.
  * All derived classes must implement the "evaluate()" method. Then a parse tree is contructed (either
  * by hand for a specific language statement or using a parser on any statement). The "evaluate()" method
  * is then called on the top node, which the recursively "executes" the entire statement.  
@@ -30,7 +30,7 @@
  * Version 1 will ignore the "(" and ")" and hand code the precedence. 
  * We need 5 leaf nodes and 1 each of *,+ and / nodes.
  * 
- * This is Version 2 - adding the braces
+ * Version 2 - adding the braces
  * In this version the tree is changed from a binary tree - now composite objects have 3 children
  * This accommodates expressions comprising an operator and 2 operands
  * In this model leafs are either numbers, operators or braces
@@ -38,7 +38,8 @@
  * Version 3 includes a parser that will create a parse tree for any arithmentic expression.
  * This would be the full intended use case for the Interpreter pattern.
  * 
- * Version 4 adds a lexer and improves the parsing algorith to deal with precedence and associativity
+ * Version 4 adds a lexer and improves the parsing algorith to deal with precedence
+ * associativity and Unary minus
  * 
  * Version 5 will turn the lexer and parser into objects (procedureal code to V4)
  * The lexer and parser may be able to use other patterns ...
@@ -53,7 +54,7 @@
 *     ::= <E> !                                                         (Rule 6) Factorial not Implemented yet
 *     ::= Number  (float or Integer or pi)                              (Rule 4)
 * 
-*  ACcording to Composite patter, make a class to represent specific nodes for each rule
+*  According to Composite patter, make a class to represent specific nodes for each rule
 *  Terminal symbols and Numbers are represented by leaf nodes. (rule 4)
 *  Composite nodes do the actual calculations - with a class for each treatment of operands
 *  All classed implement the same interface IProcess   (could be better called IEvaluate)
@@ -62,10 +63,10 @@
 // Interface definition
 interface IProcess
 {
-    public function processNode();   // process the node
+    public function processNode();   // process the node (should be called Evaluate)
 }
 
-// Abstract class for the Composite nodes
+// Abstract class for Composite nodes
 abstract class Composite Implements IProcess
 {
     // References to child nodes  
@@ -208,7 +209,8 @@ class OneOperandComposite extends Composite
 // Right Brace )               : outputs ) token
 // unrecognised                : outputs ERR token with value of unrecognised input
 
-// All tokens will have a name and a value 
+// All tokens will have a name and a value
+// Tokens are emitted by the lexer 
 class Token {
     public $tokenName;
     public $tokenValue;
@@ -221,29 +223,32 @@ class Token {
     }
 }
 
- // the lexer will process the input string token by token on demand
+ // lexer will process the input string token by token on demand
 class Lexer {
     private $inExpression;     // input expression
     private $prevTokenName;    // needed to detect UnaryMinus
     private $pos = 0;          // position of next token in Expression
     private $len;              // length of Expression in Chars
 
+
+    private function init(){  // just keep code DRY
+        $this->len = strlen($this->inExpression);
+        $this->pos = 0;
+        $this->prevTokenName = 'NOTOK'; 
+    }
+
     // the constructor saves the input exprssion and initialises things
     public function __construct()
     {
-        $this->inExpression = "1+1";  // default expression if none supplied
-        $this->len = strlen($this->inExpression);
-        $this->pos = 0;
-        $this->prevTokenName = 'NOTOK';
+        $this->inExpression = "1+1";  // default expression
+        $this->init();
     }
 
     // pass an expression to the lexer
     public function setExpression($inExpression)
     {
         $this->inExpression = $inExpression;
-        $this->len = strlen($inExpression);
-        $this->pos = 0;
-        $this->prevTokenName = 'NOTOK';
+        $this->init();
     }
 
     // create a new token and move cursor
@@ -333,22 +338,22 @@ class Lexer {
 } // end class Lexer
 //--------------------------------
 
+// This is an implementation of teh shunt-yard algorithm
+// Converts Token stream from Lexer to reverse Polish
 class ShuntYard 
 {
-    // Class to execute the shunt yard alorithm
-    // Converts Token stream from Lexer to reverse Polish
     private $lexer;              // lexer object passed to the parser in constructor
     private $operatorStack = []; // the operator stack used by Shunting-yard algorithm
 
     // output options
-    private $expressionValue;    // the final value of the input exression
+    private $expressionValue;    // the final value of the input exression (not Implemented)
     private $outTokens=[];       // the input expression converted to Reverse Polish after parse
     private $nodeBuilder=[];     // the parse tree for the supplied expression
 
-    // a table of operators and their precedence and associativity'
+    // a table of operators and their precedence and associativity
     private $op=[];
 
-    // the constructor saves the input exprssion and initialises things
+    // the constructor saves the input expression and initialises things
     public function __construct($lexer)
     {
         $this->lexer = $lexer;
@@ -358,13 +363,16 @@ class ShuntYard
         $this->op['*'] = ['prec' => 2, 'assoc' => 'left'];
         $this->op['/'] = ['prec' => 2, 'assoc' => 'left']; 
         $this->op['^'] = ['prec' => 3, 'assoc' => 'right']; 
-        $this->op['u'] = ['prec' => 4, 'assoc' => 'right'];// needs adjustment in code ^ so that -2^2 evaluates as -(2^2)
+        $this->op['u'] = ['prec' => 4, 'assoc' => 'right'];
+        // Unary Minus (UM)is normally highest precedence - except when its not!
+        // We want -2^3 to evaluate as -(2^3) NOT (-2)^3  - UM lower prec than ^
+        // However we want 2^-3 to evaluate as 2^(-3) and not -(2^3) - UM higher prec than  
     }
 
-    // add nodes to the parse-tree. Aways adds 
-    // a leaf for every Terminal token
+    // add nodes to the parse-tree.  
+    // Add a leaf for every Terminal token
     // and adds composite node for every non-terminal 
-    public function addNode($token){  
+    private function addNode($token){  
         switch ($token->tokenName){
             case  'N': // number
                 array_push($this->nodeBuilder, new Leaf($token->tokenValue));
@@ -451,7 +459,7 @@ class ShuntYard
                                 $this->addNode($popTok);
                             }
                             else
-                            {   // does not meet criteria for outputing so push it back 
+                            {   // does not meet criteria for outputting so push it back 
                                 array_push($this->operatorStack,$popTok);
                                 break; // and exit loop
                             }
@@ -509,8 +517,8 @@ class ShuntYard
 //-------------------------------
 
 // now use the lexer and parser to create a parse-tree for any conforming input expression
-$expression = "((2+3)*sin(pi/2))^9^.5";
-$expression = "---6^---2";
+$expression = "((2+3)*sin(pi/2))^9^.5";  // or any other exprssion you like...
+//$expression = "---6^---2";
 echo "input expression ".PHP_EOL.$expression.PHP_EOL;
 
 $lex = new Lexer();                     // make the lexer object
@@ -520,7 +528,6 @@ echo "lexer output".PHP_EOL;
 $nodeBuilder = $shuntYard->parse();     // parse method returning the parse-tree
 $parseTree = array_pop($nodeBuilder);   // recover the head of the parse-tree 
 echo "Evaluation via composite pattern tree...".PHP_EOL;
-$result = $parseTree->processNode();
+$result = $parseTree->processNode();    // this prints the terminals as it goes
 echo " = ".$result.PHP_EOL;
-
 return;
