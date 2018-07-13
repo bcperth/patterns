@@ -3,20 +3,58 @@ There is one sub directory per pattern.
 Each subdirectory is named after its target pattern:
 A minimal implementation of each pattern is constructed, in PHP or nodel.js as far as possible, together with some explanatory notes.
 
-Strategy: When one or more methods of a class (Component) can have multiple variations (strategies) eg sorting algorithms, the Strategy pattern allows you to "inject" the required mix of method implementations (strategies) into the constructor. Each "strategy" has its own Interface, and implementations of each strategy are instantiated as separate objects.
-The concrete strategy is injected into the component via its constructor and the component saves a reference to the concrete strategy.  
+Strategy: When one or more methods of a class (Component) can have multiple variations (strategies) eg sorting algorithms, the Strategy pattern allows you to "inject" the required mix of method implementations (strategies) into the constructor. All "strategies" implement the same Interface, but using different algorithms. 
+The Component contains references to objects that implement the desired interface. The references are initialised in the components constructor (dependency injection) and from then on the component will sort (or whatever) using the sort algorithm of the injected starteg object. 
+------------------------------------------------------------- PHP example done
 
 Observer: When multiple classes (Observers) needs to be informed of changes occurring in another class (Observable), the Observer pattern allows Observers to register with the Observable. The Observable subsequently informs each Observer of state changes via the Observer's inform() method. The Observer then gets the state update by calling the Observables's update() method.
+------------------------------------------------------------- PHP example done
 
 Decorator: When method of a class can have multiple "layers" ie variations that are built upon each other, the Decorator pattern allows derived classes to add additional functionality to the base method. The end result is a linked list of a base object and any number of derived objects. This operates like a pipe, where the output of inner objects become the input of the outer objects until the outermost decorator is reached.
+------------------------------------------------------------- PHP example done
 
-State: When a system can be modelled as a "state machine"  ie system has a fixed number states. The system behaves differently in each state AND has fixed rules to transition between states. (ref a state transition diagrams used to model such systems). The State Pattern implements the system as a "Context" object and a collection of "State" objects. State objects have 2 roles: 1 to implement the state specific behaviour: 2 to transition to the next state ( ie set the new current state in the context). Each State implements the same Interface, matching the context methods. When a method is called on the Context it delegates execution to the current State. The context is stateful(ie changes state) but eachSate object is stateless (and so can be reused).
+State: When a system can be modelled as a "state machine"  ie system has a fixed number states. The system behaves differently in each state AND has fixed rules to transition between states. (ref a state transition diagrams used to model such systems). The State Pattern implements the system as a "Context" object and a collection of "State" objects. The Context (system) can have only one state at a time - and behaves differently according to the state object that is currently installed. 
+State objects have 2 roles: 1) to implement the state specific behaviour: 2) to transition to the next state (ie set the new current state in the context). Each State implements the same Interface, matching the context's methods. When a method is called on the Context it delegates execution to the current State. The context is stateful (ie changes state) but each State object itself is stateless (and so can be reused - can be singletons).
+------------------------------------------------------------- PHP example done
 
 Iterator: This provides a standard set of methods (an Iteractor object ) to iterate through any collection of objects (Iterable) such as sets, arrays, lists, trees, networks etc. The Iterator object implements the Iterator Interface - which defines at least 3 basic methods: hasNext(), next() and current().  The Iterable object has a factory method to create concrete Iterator objects on request from clients. The clients use the Iterator to iterate through the collection (and presumable process each item in some way). The "foreach" clause - found in many OOP languages - relies on the iterator pattern ie is implemented using the 3 iterator methods.
+------------------------------------------------------------- PHP example done
 
 Singleton: This is a mini-pattern that provides a way to prevent more than one object of a class to be instantiated. It does this by making the constructor private (prevent "new" from being used) and by providing a static method eg called Instance(), to create an instance. There is also a static variable eg called $inst (php) which is either NULL (no object create yet) or = the referece to the created object. Instance() checks $inst and create a new object if NULL and set $inst to that object. It then returns $inst as the new object (which may not be new!).
+------------------------------------------------------------- PHP example done
 
-Composite: The composite pattern constructs a tree with each node being either a composite element (has children) or a leaf element (no children). It also allows the user to process the tree (or a node) in a consistent manner without knowing in advance whether the node is composite or a leaf. Meaning, you can traverse the tree using process(node) at each node without first determining the node type. Its certain however that the processing will be different, but this is taken care of by the pattern.  
+Composite: The composite pattern constructs a tree with each node being either a composite element (has children) or a leaf element (no children). It also allows the user to process the tree (or a node) in a consistent manner without knowing in advance whether the node is composite or a leaf. All nodes share the same Interface. Composite nodes include references to child nodes. Meaning, you can traverse the tree using method Process() at each node without first determining the node type. The processing will be different at each node, courtesy of polymorphism. The Composite pattern (tree) can be used to represent hirerachical structures, such as material breakdowns ( ie breakdown of a car into lists of assemblies, sub-assemblies, sub-sub-asemblies etc and parts) or many types of document (including the HTML DOM), or work breakdowns for projects. 
+------------------------------------------------------------- See Interpreter for PHP example
+
+Interpreter: This pattern is essentially a "use case" of the Composite pattern as applied to languages and parsing.
+Parse-trees conform to the composite pattern. The Interpreter Pattern "says" if you describe your language (in the usual way) via a set of rules, comprising terminals (alphabet) and non-terminals (words, sentences), then you need to create a composite class for every rule and represent each terminal as a leaf node. Then write a parser (not helped by the pattern!) to output a parse tree using composite and leaf nodes as above. Its easiest to understand this using a simple math expression language:
+
+E : E op E   (where op is +,-,*,/,^)                    - class TwoOperandCompositeNode
+  : (E)      ( braces)                                  - class BracesCompositeNode
+  : fn(E)    (where fn = sin, cos etc)                  - class FunctionCompositeNode
+  : -E       (where - is UNARYMINUS)                    - class OneOperandCompositeNode
+  : N        (where N is a number int,float whatever)   - class LeafNode   
+
+The we create 4 composite classes, one each for the first 4 rules.The terminals (op, (,),fn,N) are leaf nodes.
+The parse creates instances of composite nodes and leaf nodes as it finds them and links them in the appropriate hierarchy. I took a bit of time with these examples, first building the parse-tree by hand to solve a particular expression. By version 5 there is a lexer object and parser object (shunt-yard) that can create the parse-tree (composite pattern) for any conforming input expression. When the parse-tree is built - you evaluate the expression by calling the Process() method on the head node. 
+------------------------------------------------------------- PHP example done
+
+Command Pattern and Memento Pattern: These patterns allow a command "dispatcher" (like a menu) to have commands (menu items) to be "attached", in such a way that the "dispatcher" does not need to concern itself about what the command does or what it operates on. Typically commands, in applications like text/graphics editors, have an execute() method and an unExecute() method (do and undo). Every menu item, when clicked calls its execute() method, but execution is delegated to the attached command object. This makes dispatchers (eg menus) very reusable. In reversible systems (like editors) it is usual to save a list of recent commands and allow undo(). The general command (undo last command) can then be implemented via the unExecute() method of the most recent command in the list. If redo() is allowed then the command stays in the list (to allow a subsequent execute()), otherwise it may be deleted from the list. 
+
+If a command needs to save state of some kind, to make unExecute() work, then the Memento pattern provides a way to do this. The state is stored in objects of class Memento providing setState() and getState() methods. State should be private to the object whose state is being saved and restored. The pattern describes collaborations between CareTaker (outsider), Originator(object that owns the state) and Memento (object that saves the state), to ensure that an object (Originator) can be told to save and retrieve its state, while keeping the state private to the Originator. For a simple undo, when a command is saved for later undo, the command object can create a Memento object as needed to save and retrieve the command's state.
+
+In a more general situation, where a general purpose object has (possibly complicated) state and multiple versions of that state needs to be saved and retrieved as needed, then the CareTaker (or client) can instruct the object to create a Memento and return a reference to it. In this way the CareTaker can keep a list of states, each of which it can restore as needed. However, despite have a list of state objects (of class Mememto) the CareTaker has no access to the state (like a bank holding safety deposit boxes without having keys to each box).
+------------------------------------------------------------- PHP example NOT YET done
+
+Factory Method. This pattern provides a way to create objects at run time. The idea is applicable to objects that have many subclasses and its not known at compile time which classes will be needed. The base class defines an abstract factoryMethod() that is implemented (differently) in all subclasses. Factory Method is a better alternative to using a static method with complicated constructors.
+------------------To be fleshed out -------------------------- PHP example NOT YET done
+
+Abstract factory. This pattern is an extension of Factory Method, allowing families of classes to be created at run time.
+------------------To be fleshed out -------------------------- PHP example NOT YET done
+
+ 
+
+
 
 
 
