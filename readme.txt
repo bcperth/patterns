@@ -4,7 +4,7 @@ Each subdirectory is named after its target pattern:
 A minimal implementation of each pattern is constructed, in PHP or nodel.js as far as possible, together with some explanatory notes.
 
 Strategy: When one or more methods of a class (Component) can have multiple variations (strategies) eg sorting algorithms, the Strategy pattern allows you to "inject" the required mix of method implementations (strategies) into the constructor. All "strategies" implement the same Interface, but using different algorithms. 
-The Component contains references to objects that implement the desired interface. The references are initialised in the components constructor (dependency injection) and from then on the component will sort (or whatever) using the sort algorithm of the injected starteg object. 
+The Component contains references to objects that implement the desired interface. The references are initialised in the components constructor (dependency injection) and from then on the component will sort (or whatever) using the sort algorithm of the injected startegy object. 
 ------------------------------------------------------------- PHP example done
 
 Observer: When multiple classes (Observers) needs to be informed of changes occurring in another class (Observable), the Observer pattern allows Observers to register with the Observable. The Observable subsequently informs each Observer of state changes via the Observer's inform() method. The Observer then gets the state update by calling the Observables's update() method.
@@ -18,7 +18,7 @@ State objects have 2 roles: 1) to implement the state specific behaviour: 2) to 
 ------------------------------------------------------------- PHP example done
 
 Iterator: This provides a standard set of methods (an Iteractor object ) to iterate through any collection of objects (Iterable) such as sets, arrays, lists, trees, networks etc. The Iterator object implements the Iterator Interface - which defines at least 3 basic methods: hasNext(), next() and current().  The Iterable object has a factory method to create concrete Iterator objects on request from clients. The clients use the Iterator to iterate through the collection (and presumable process each item in some way). The "foreach" clause - found in many OOP languages - relies on the iterator pattern ie is implemented using the 3 iterator methods.
-------------------------------------------------------------- PHP example done
+------------------------------------------------------------- PHP example NOT done
 
 Singleton: This is a mini-pattern that provides a way to prevent more than one object of a class to be instantiated. It does this by making the constructor private (prevent "new" from being used) and by providing a static method eg called Instance(), to create an instance. There is also a static variable eg called $inst (php) which is either NULL (no object create yet) or = the referece to the created object. Instance() checks $inst and create a new object if NULL and set $inst to that object. It then returns $inst as the new object (which may not be new!).
 ------------------------------------------------------------- PHP example done
@@ -29,14 +29,14 @@ Composite: The composite pattern constructs a tree with each node being either a
 Interpreter: This pattern is essentially a "use case" of the Composite pattern as applied to languages and parsing.
 Parse-trees conform to the composite pattern. The Interpreter Pattern "says" if you describe your language (in the usual way) via a set of rules, comprising terminals (alphabet) and non-terminals (words, sentences), then you need to create a composite class for every rule and represent each terminal as a leaf node. Then write a parser (not helped by the pattern!) to output a parse tree using composite and leaf nodes as above. Its easiest to understand this using a simple math expression language:
 
-E : E op E   (where op is +,-,*,/,^)                    - class TwoOperandCompositeNode
-  : (E)      ( braces)                                  - class BracesCompositeNode
-  : fn(E)    (where fn = sin, cos etc)                  - class FunctionCompositeNode
-  : -E       (where - is UNARYMINUS)                    - class OneOperandCompositeNode
-  : N        (where N is a number int,float whatever)   - class LeafNode   
+E : E op E   (where op is +,-,*,/,^)                    - class TwoOperandNode
+  : (E)      (braces)                                   - class BraceNode
+  : fn(E)    (where fn = sin, cos etc)                  - class FunctionNode
+  : -E       (where - is UNARYMINUS)                    - class OneOperandNode
+  : N | pi   (where N is any number an pi is, well pi)  - class LeafNode   
 
 The we create 4 composite classes, one each for the first 4 rules.The terminals (op, (,),fn,N) are leaf nodes.
-The parse creates instances of composite nodes and leaf nodes as it finds them and links them in the appropriate hierarchy. I took a bit of time with these examples, first building the parse-tree by hand to solve a particular expression. By version 5 there is a lexer object and parser object (shunt-yard) that can create the parse-tree (composite pattern) for any conforming input expression. When the parse-tree is built - you evaluate the expression by calling the Process() method on the head node. 
+The parse creates instances of composite nodes and leaf nodes as it finds them and links them in the appropriate hierarchy. I took a bit of time with these examples, first building the parse-tree by hand to solve a particular expression. By version 5 there is a lexer object and parser object (shunt-yard) that can create the parse-tree (composite pattern) for any conforming input expression. When the parse-tree is built - the expression is evaluated by calling the evaluate() method on the head node (which recursively evaluates the tree). 
 ------------------------------------------------------------- PHP example done
 
 Command Pattern and Memento Pattern: These patterns allow a command "dispatcher" (like a menu) to have commands (menu items) to be "attached", in such a way that the "dispatcher" does not need to concern itself about what the command does or what it operates on. Typically commands, in applications like text/graphics editors, have an execute() method and an unExecute() method (do and undo). Every menu item, when clicked calls its execute() method, but execution is delegated to the attached command object. This makes dispatchers (eg menus) very reusable. In reversible systems (like editors) it is usual to save a list of recent commands and allow undo(). The general command (undo last command) can then be implemented via the unExecute() method of the most recent command in the list. If redo() is allowed then the command stays in the list (to allow a subsequent execute()), otherwise it may be deleted from the list. 
@@ -46,10 +46,11 @@ If a command needs to save state of some kind, to make unExecute() work, then th
 In a more general situation, where a general purpose object has (possibly complicated) state and multiple versions of that state needs to be saved and retrieved as needed, then the CareTaker (or client) can instruct the object to create a Memento and return a reference to it. In this way the CareTaker can keep a list of states, each of which it can restore as needed. However, despite have a list of state objects (of class Mememto) the CareTaker has no access to the state (like a bank holding safety deposit boxes without having keys to each box).
 ------------------------------------------------------------- PHP example NOT YET done
 
-Factory Method. This pattern provides a way to create objects at run time. The idea is applicable to objects that have many subclasses and its not known at compile time which classes will be needed. The base class defines an abstract factoryMethod() that is implemented (differently) in all subclasses. Factory Method is a better alternative to using a static method with complicated constructors.
-------------------To be fleshed out -------------------------- PHP example NOT YET done
+Factory Method. See FactoryMethods.txt for details
 
-Abstract factory. This pattern is an extension of Factory Method, allowing families of classes to be created at run time.
+------------------------------------------------------------- PHP example done
+
+Abstract factory. See FactoryMethods.txt for details
 ------------------To be fleshed out -------------------------- PHP example NOT YET done
 
  

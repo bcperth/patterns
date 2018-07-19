@@ -1,0 +1,87 @@
+Having read several sources and watched tutorial videos on Factory Method and Abstract Factory that there are many variations and interpretations ..... which can be confusing.
+
+The best tutorial on this topic is Christopher Okhravi (YouTube)
+The worst (confusing and fast paced) - by a large margin is Derek Banas (YouTube)
+
+After reading GoF and others at TutorialPoint etc and wathing several vidoes - here is my take:
+
+Factory Method:
+Factory Method is a pattern for instantiating ONE object at run time, where its not known in advance which object will be needed AND where candidate objects are of the same type (have the same interface etc). 
+
+For example consider a generic Document object that is defined as an abstract class, whose subclasses are concrete classes for HTMLDocument, JSDocument and PHPDocument. Each concrete Document needs a specialised Parser so as to provide proper context sensitve help. To meet this need we define an abstract Parser class with subclasses for HTMLParser, JSParser and PHPParser.
+
+The abstract Document has a (factory) method called creatParser(). 
+createParser is implemented differently in each of the concrete Document classes.
+
+The abstract Paser class has an abstract parse() method.
+parse() is implemented differently in each of the concrete Parser classes.
+
+If the user open a new HTMLDocument the editor application instantiates a new HTMLDocument object.
+On instantiation, the HTMLDocument calls its createParser() method (which "news" a HTMLParser).
+
+In this way the creation of the correct Parser is delegated to the sub-classes of Editor.
+So we have an AbstractCreator and ConcreteCreators - the abstract Document class and its concrete subclasses.
+We also have an AbstractProduct and ConcreteCreators - the abstract Parser class and its concrete subclasses.
+Concrete Editors objects instantiate concrete Parser objects.
+
+Variations (the reason the pattern can be confusing when authors pick one variation as "the way its done"):
+1) A separate abstract ParserFactory object is used, whose createParser() method is implemented in subclasses.
+   This would require a HTMLParserFactory object to be instantiated and injected into the HTMLDocument via the constructor for example. eg new HTMDocument(new HTMLParserFactory). 
+
+2a) Document is a concrete class and so one concrete createParser() method. 
+2b) Document is an abstract class but has concrete createParser() - which may or not be overridden.
+
+In both cases createParser() is parameterised. Concrete Document classes (eh HTMLDocument) call createParser("HTML") which "news" HTMLParser. 
+
+3) An instantiated Document needs multiple versions of the product (as opposed to each different instantiated Document needing one specialised Product.  Say the parser itself needs to create a parse-tree composed of nodes of many different types. Then the Parser itself may use the Factory Method via a parameterised createNode("type of node") factory method.
+
+4) There may be multiple abstract and concrete Products. Each document (Creator) may reuest any version of each of the concrete products of type A,B C etc. Thus there are several Factory Methods like createParser(), createFormatter(), createDebugger() and the Document may "mix and match" as needed.
+
+see code for examples
+-------------------------------------------
+
+Abstract Factory: 
+This pattern is an extension of Factory Method, allowing families of product classes to be created at run time.
+ie the client will need a coordinated "set" of products from a pallette of 'n' sets. The client cannot "mix and match" like in the multiple product version of Factory Method.
+
+A quoted use case is where an application has a UI that must run on Windows, Mac and XWindows. This requires 3 coordinated sets of UI controls and widgets, that may be swapped in when the application is started. Presumably the application can detect which platform it is running on (yes contrived but illustrative).
+We could also imagine Document types requiring a coordinated set of Parser, Formatter, Debugger objects where "mis and match" is not an option.
+
+Taking the Document example the Abstract Factory pattern requires:
+
+1) An abstract abstractFactory class
+      abstract createParser()
+      abstract createDebugger()
+      abstarct createFormatter().
+
+2) Concrete Factory classes
+      HTMLFactory
+          concrete createParser()  - instantiates HTMLParser
+          concrete createDebugger()- instantiates HTMLDebugger
+          concrete createFormatter()-instantiates HTMLFormatter
+      JSFactory
+           etc
+      PHPFactory
+           etc
+3) an abstract Document Class
+      abstract createFactory()
+
+4) concrete Document Classes
+      HTMLDocument
+          concrete createFactory() - instantiates HTMLFactory
+      JSDocument
+          concrete createFactory() - instantiates JSFactory
+      PHPDocument 
+          concrete createFactory() - instantiates PHPFactory
+       
+Usage:
+
+doc = new HTMLDocument;
+// all code below is the same irrespective of doc type created.
+factory = doc->createFactory();                  // creates a HTMLFactory via polymorphism
+parser = factory->createParser();	         // creates a HTMLParser via polymorphism
+debugger = factory->createDebugger();            // creates a HTMLDebugger via polymorphism
+formatter = factory->createFormatter();          // creates a HTMLFormatter via polymorphism
+
+see code for examples
+----------------------

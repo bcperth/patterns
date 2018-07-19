@@ -2,10 +2,10 @@
 
 /**
  * Composite: The composite pattern constructs a tree with each node being either a composite element 
- * (has children) or a leaf element (no children). It also allows the user to process the tree (or a node)
+ * (has children) or a leaf element (no children). It also allows the user to Evaluate the tree (or a node)
  * in a consistent manner without knowing in advance whether the node is composite or a leaf. 
- * Meaning, you can traverse the tree using process(node) at each node without first determining 
- * the node type. Its certain however that the processing will be different, but this is taken care of 
+ * Meaning, you can traverse the tree using Evaluate(node) at each node without first determining 
+ * the node type. Its certain however that the Evaluateing will be different, but this is taken care of 
  * by the pattern. 
  * 
  * Comparison to Decorator. Decorator UML looks similar to Composite. Decorator also constructs
@@ -25,7 +25,7 @@
  * 
  * The example will be an arithmetic expression evaluator. Normally the tree would be produced by a parser  
  * depending on the expression entered. In this case we will hand code a tree to calculate the expression
- * ((a+b)*(c+d))/e. Then poke values for a,b,c,d,e into the leaf nodes and tell the tree to process itself 
+ * ((a+b)*(c+d))/e. Then poke values for a,b,c,d,e into the leaf nodes and tell the tree to Evaluate itself 
  * and output the result. 
  * Version 1 will ignore the "(" and ")" and hand code the precedence. 
  * We need 5 leaf nodes and 1 each of *,+ and / nodes.
@@ -57,17 +57,17 @@
 *  According to Composite patter, make a class to represent specific nodes for each rule
 *  Terminal symbols and Numbers are represented by leaf nodes. (rule 4)
 *  Composite nodes do the actual calculations - with a class for each treatment of operands
-*  All classed implement the same interface IProcess   (could be better called IEvaluate)
+*  All classed implement the same interface IEvaluate 
 */
 
 // Interface definition
-interface IProcess
+interface IEvaluate
 {
-    public function processNode();   // process the node (should be called Evaluate)
+    public function evaluate();   // each node can be "evaluated" in some way 
 }
 
 // Abstract class for Composite nodes
-abstract class Composite Implements IProcess
+abstract class Composite Implements IEvaluate
 {
     // References to child nodes  
     protected $leftChild;
@@ -82,18 +82,18 @@ abstract class Composite Implements IProcess
         $this->rightChild = $rightChild;
     }
     // This is where the calculation is done
-    abstract public function processNode(); 
+    abstract public function evaluate(); 
 }
 
 // Rule 1: Represents (E op E) where op is in (+,-,*,/,^)
 class TwoOperandComposite extends Composite
 {
-    public function processNode()
+    public function evaluate()
     {
         // retrieve the left and right children and do the required operation
-        $val1     =  $this->leftChild->processNode();   // returns a value
-        $operator =  $this->midChild->processNode();    // the operator
-        $val2     =  $this->rightChild->processNode();  // returns a value
+        $val1     =  $this->leftChild->evaluate();   // returns a value
+        $operator =  $this->midChild->evaluate();    // the operator
+        $val2     =  $this->rightChild->evaluate();  // returns a value
         $result = 0;
         switch($operator){
         case "*":
@@ -116,18 +116,18 @@ class TwoOperandComposite extends Composite
             break;
         }
         return($result);
-        //return ($this->child1->processNode() * $this->child2->processNode());
+        //return ($this->child1->evaluate() * $this->child2->evaluate());
     }
 }
 
 // Rule 2: Represents 'fun(E)' where fun in (sin, cos, tan ... any any additionals)
 class FunctionComposite extends Composite
 {
-    public function processNode()
+    public function evaluate()
     {
         // returns mapping of x->fn(x)
-        $function =  $this->midChild->processNode();    // returns the function
-        $val1     =  $this->leftChild->processNode();  // returns a value
+        $function =  $this->midChild->evaluate();    // returns the function
+        $val1     =  $this->leftChild->evaluate();  // returns a value
         $result = 0;
         switch($function){
         case "sin":
@@ -147,18 +147,18 @@ class FunctionComposite extends Composite
 // Rule 3: Represents braced expressions ie '(' E ')'
 class BraceComposite extends Composite
 {
-    public function processNode()
+    public function evaluate()
     {
         // returns the value between braces
-        $this->leftChild->processNode();           // force the '(' to be echoed (can be ommitted)
-        $result = $this->midChild->processNode();  // returns a value
-        $this->rightChild->processNode();          // force the ')' to be echoed (can be ommitted)
+        $this->leftChild->evaluate();           // force the '(' to be echoed (can be ommitted)
+        $result = $this->midChild->evaluate();  // returns a value
+        $this->rightChild->evaluate();          // force the ')' to be echoed (can be ommitted)
         return $result;
     }
 }
 
 // Rule 4:  represents ('Number') and all terminal symbols - (+,-,*,/,^,'(',')',sin, cos, tan)
-class Leaf implements IProcess
+class Leaf implements IEvaluate
 {
     private $value;   // can be a numeric value or one of the terminals
     // the constructor initialises the value
@@ -166,27 +166,27 @@ class Leaf implements IProcess
     {
         $this->value = $value;
     }
-    public function processNode()
+    public function evaluate()
     {
         if ($this->value =='u')
         {
             echo '-'; // for unary minus
         }
         else{
-            echo $this->value;       // echoing terminals verifies the order of processing (cam be omitted) 
+            echo $this->value;       // echoing terminals verifies the order of Evaluateing (cam be omitted) 
         }
         return $this->value;     // value is either a Number or other terminal
-    } // implementing IProcess
+    } // implementing IEvaluate
 }
 
 // Rule 5: One operand operators (initially only Unary Minus)
 class OneOperandComposite extends Composite
 {
-    public function processNode()
+    public function evaluate()
     {
         // returns product of 2 children
-        $op   =  $this->midChild->processNode();    // returns the operator
-        $val1 =  $this->leftChild->processNode();   // returns a value
+        $op   =  $this->midChild->evaluate();    // returns the operator
+        $val1 =  $this->leftChild->evaluate();   // returns a value
         $result = 0;
         switch($op){
         case 'u':
@@ -223,7 +223,7 @@ class Token {
     }
 }
 
- // lexer will process the input string token by token on demand
+ // lexer will Evaluate the input string token by token on demand
 class Lexer {
     private $inExpression;     // input expression
     private $prevTokenName;    // needed to detect UnaryMinus
@@ -498,6 +498,7 @@ class ShuntYard
                     $errToken = new Token("ERR","unrecognised token");
                     $this->outTokens[] = $errToken;
                     $this->addNode($errToken);
+                    break;
             } // end switch
         } // end for
 
@@ -528,6 +529,6 @@ echo "lexer output".PHP_EOL;
 $nodeBuilder = $shuntYard->parse();     // parse method returning the parse-tree
 $parseTree = array_pop($nodeBuilder);   // recover the head of the parse-tree 
 echo "Evaluation via composite pattern tree...".PHP_EOL;
-$result = $parseTree->processNode();    // this prints the terminals as it goes
+$result = $parseTree->evaluate();    // this prints the terminals as it goes
 echo " = ".$result.PHP_EOL;
 return;
