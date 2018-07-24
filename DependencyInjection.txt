@@ -101,22 +101,26 @@ with a published API may reduce to recipe following, not the best way to learn b
 ....however, when you really need a "DI Container" for a commercial or long life application, to be built and maintained by a team where people come and go... then you don't want every programmer to role their own! In this case buy a Container with a published stable API that is maintained by others (or role your own and mainatin it as a source controlled, actively managed, testable "component" of the system).
 
 Some examples of public "lighweight" containers in various languages:
-PicoContainer: <http://picocontainer.com/introduction.html> 	for Java
-google guice:  <https://github.com/google/guice> 		for Java V6 and later.
-InversifyJS:   <http://inversify.io/> 				for Javascript (TypeScript)
-BottleJS:      <https://github.com/young-steveo/bottlejs>	for Javascript (TypeScript)
-Autofac:       <http://autofac.readthedocs.io/en/latest/index.html> for Microsoft ,NET c# (I assume)
-Pimple:        <https://pimple.symfony.com> 			for PHP (by fabien.potencier author symphony)
-Hypodermic:    <https://github.com/ybainier/Hypodermic> 	for C++ 
+PicoContainer: 	<http://picocontainer.com/introduction.html> 	for Java
+google guice:  	<https://github.com/google/guice> 		for Java V6 and later.
+InversifyJS:   	<http://inversify.io/> 				for Javascript (TypeScript)
+BottleJS:      	<https://github.com/young-steveo/bottlejs>	for Javascript (TypeScript)
+Autofac:       	<http://autofac.readthedocs.io/en/latest/index.html> for Microsoft ,NET c# (I assume)
+Pimple:        	<https://pimple.symfony.com> 			for PHP (by fabien.potencier author symphony)
+Auryn:		<https://github.com/rdlowrey/auryn>             for PHP 
+Hypodermic:     <https://github.com/ybainier/Hypodermic> 	for C++ 
                (see also {boost].DI - C++ lib building DI containers)
 
 What happens if you ask a DI Container to create an object that has dependencies?
 You can tell the Container beforehand (somehow) about the dependencies ....or
 ....the DI container may use Introspection and Reflection (ie examine the class at runtime and figure it out).
+For example " Auryn is a recursive dependency injector. Auryn recursively instantiates class dependencies based on the parameter type-hints specified in class constructor signatures. This requires the use of Reflection."
+Additionally...
 For Java see this article <http://www2.sys-con.com/itsg/virtualcd/java/archives/0305/sagar2/index.html>
 For PHP see this article  <https://www.sitepoint.com/introspection-and-reflection-in-php/>
-For Javascript ... this is a prototype base language, and the base object is able to describe itself.
-                   without looking too deeply there is also the built-in "Reflect" object.
+For Javascript ... this is a prototype based language, and the base object is able to describe itself,
+                   and so all objects are able to describe themselves...
+                   ...without looking too deeply there is also the built-in "Reflect" object.
 
 If we are building a DI Container, we need:
 1) An API to register objects ... and possibly advise dependencies.
@@ -135,7 +139,7 @@ Now that know:
 -They are used a lot by frameworks
 -A little on how they may be constructed...
 
-... the next step is to make "toy" versions in a few target languages (C++, PHP, Javascript)
+... the next step is to make "toy" DI Containers in a few target languages (C++, PHP, Javascript)
 ... then attempt to import and use some of the published Container objects.
 
 
