@@ -54,19 +54,20 @@ class Tulip extends Flower { // Concrete Creator
 interface IFertiliser {  // All fertilisers must implement 
     public function whoami();
 }
-
 class RoseFertiliser implements IFertiliser { // Rose
-    public function whoami()    
-    {
-        echo "rose fertiliser".PHP_EOL;
-    }
+    public function whoami()  {echo "rose fertiliser".PHP_EOL;}
 }
-
 class TulipFertiliser implements IFertiliser { // Tulip
-    public function whoami()    
-    {
-        echo "tulip fertiliser".PHP_EOL;
-    }
+    public function whoami()  {echo "tulip fertiliser".PHP_EOL;}
+}
+class GeneralFertiliser implements IFertiliser { // General
+    public function whoami() { echo "general fertiliser".PHP_EOL;}
+}
+class OrganicFertiliser implements IFertiliser { // Organic
+    public function whoami() { echo "organic fertiliser".PHP_EOL;}
+}
+class FirFertiliser implements IFertiliser { // Organic
+    public function whoami() { echo "special fir fertiliser".PHP_EOL;}
 }
 
 // Now create an array of flowers
@@ -85,7 +86,7 @@ foreach($flowers as $flower){
 
 //--------------------------------------------------
 // Variation 2.  Concrete Creator
-// Used when a Creator or its sub-classes can either use the default product or a special product
+// Used when a Creator or its sub-classes can use either the default product or a special product
 //--------------------------------------------------
 
 // Creator classes
@@ -103,9 +104,10 @@ class Shrub {  // concrete Creator
 }
 
 class Hybiscus extends Shrub { // Concrete Creator
+    // I need special organic fertiliser
     public function createFertiliser()      // override factory method
     {
-        $this->fertiliser = new HybiscusFertiliser;
+        $this->fertiliser = new OrganicFertiliser;
     }
     public function __construct(){$this->name="hybiscus";}
 }
@@ -115,19 +117,12 @@ class Privet extends Shrub { // Concrete Creator
     public function __construct(){$this->name="privet";}
 }
 //----------------------------
-class HybiscusFertiliser implements IFertiliser { // Hybiscus
-    public function whoami() {echo "hybiscus fertiliser".PHP_EOL;}
-}
 
-class GeneralFertiliser implements IFertiliser { // General
-    public function whoami() { echo "general fertiliser".PHP_EOL;}
-}
-
-// Now create an array of flowers
+// Now create an array of shrubs
 $shrubs[] = new Hybiscus;
 $shrubs[] = new Privet;
 
-// From here the code is independent of flower variations
+// From here the code is independent of shrub variations
 // the subclasses of Creator may or not need special fertiliser
 echo PHP_EOL."Variation 2: Some shrubs can use general fertiliser".PHP_EOL;
 foreach($shrubs as $shrub){
@@ -148,14 +143,17 @@ class Tree {  // concrete Creator
     {
         switch($fertiliserType)
         {
-            case "fir":
-                $this->fertiliser = new FirFertiliser;
+            case "organic":
+                $this->fertiliser = new OrganicFertiliser;
                 break;
+            case "fir":
+                $this->fertiliser = new OrganicFertiliser;
+                break;                
             case "pine":
-                $this->fertiliser = new PineFertiliser;
+                $this->fertiliser = new GeneralFertiliser;
                 break; 
             default:
-                $this->fertiliser = new generalFertiliser;
+                $this->fertiliser = new GeneralFertiliser;
         }
  
     }
@@ -168,10 +166,13 @@ class Tree {  // concrete Creator
 class Fir extends Tree { // Concrete Creator
     public function createFertiliser($fertiliserType)  // override factory method
     {
-            if($fertiliserType == "organic"){
-                $this->fertiliser = new organicFertiliser;
+            if($fertiliserType == "fir"){
+                $this->fertiliser = new FirFertiliser;
             }
-            else{
+            else if ($fertiliserType == "general"){ 
+                $this->fertiliser = new OrganicFertiliser;;
+            }      
+            else{ 
                 parent::createFertiliser($fertiliserType);
             }
     }
@@ -182,37 +183,23 @@ class Pine extends Tree { // Concrete Creator
     // i'm good with the default fertiliser
     public function __construct(){$this->name="pine";}
 }
-
-class FirFertiliser implements IFertiliser { // Fir
-    public function whoami() { echo "fir fertiliser".PHP_EOL;}
-}
-class PineFertiliser implements IFertiliser { // Pine
-    public function whoami() { echo "pine fertiliser".PHP_EOL;}
-}
-class OrganicFertiliser implements IFertiliser { // organic
-    public function whoami() { echo "organic fertiliser (for firs only)".PHP_EOL;}
-}
 //----------------------------
 
 // Now create an array of trees, mixing and matching the fertilisers
 $trees[] = new Fir;
-$trees[0]->createFertiliser("fir");    
+$trees[0]->createFertiliser("fir");    // will be "special fir"
 $trees[] = new Fir;
-$trees[1]->createFertiliser("pine");
+$trees[1]->createFertiliser("general"); // will change to organic "organic"
 $trees[] = new Fir;
-$trees[2]->createFertiliser("organic"); // will result in "organic"
+$trees[2]->createFertiliser("organic"); // will be "organic"
 $trees[] = new Fir;
-$trees[3]->createFertiliser("any");  // will result in "general"
+$trees[3]->createFertiliser("any");     // will change to "general"
 $trees[] = new Pine;
-$trees[4]->createFertiliser("pine");
+$trees[4]->createFertiliser("any");    // will change to "general"
 $trees[] = new Pine;
-$trees[5]->createFertiliser("fir");
-$trees[] = new Pine;
-$trees[6]->createFertiliser("organic");  // will result in "general" NOT "organic"
-$trees[] = new Pine;
-$trees[7]->createFertiliser("any");  // will result in "general"
+$trees[5]->createFertiliser("fir");    // will change to "organic"
 
-// From here the code is independent of flower variations
+// From here the code is independent of tree variations
 // the subclasses of Creator may or not need special fertiliser
 echo PHP_EOL."Variation 3: Parameterisation allows fertilisers to be 'mixed and matched'".PHP_EOL;
 foreach($trees as $tree){

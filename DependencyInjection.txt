@@ -1,0 +1,164 @@
+Dependency Injection(DI) and DI containers
+
+This article falls under the category of:
+"write down everything you know about a subject, and find out what you DON'T know"
+You find out what you know you dont know when writing ....and
+what you dont know you dont know when other people read it!"
+
+Objects (let call then Clients) often use other objects to provide a service or information.
+The "other objects" are called "Dependencies" of the owner object.
+
+There are a few ways that objects can gain access to their Depencencies.
+1) Directly reference global instances (created by the man App say).
+2) Create the Dependencies internally - at construct time, during execution - whatever.
+2a) "Order" the Dependencies from an object factory or a "service locator"
+3) Have the Dependencies passed in from the outside.
+
+Option 3) is called Dependency Injection (DI).
+Why is it good to use DI, maybe even as the default? 
+a) The Client will be closer to that single responsibility principle of SOLID
+b) It unburdens the Client from deciding which Depencencies it needs,from a possible large palette,
+   and also unburdens it from being responsible for their creation and configuration.
+c) The Client is easier to read, making it obvious which external services (Dependencies) it is using.
+d) It may be more efficient to control the lifecycle of Dependencies from outside the Client
+   An obvious example is a globally accessible pool of database connections.
+e) THE ONLY reason, according to some people, is to enable testing. By using DI an object can be tested
+   in isolation from its dependencies - ie simple fake objects with the same Interface signature of the dependencies can be injected to test the client - and enable testing of main use cases but all exceptional cases also.
+
+DI and Composition:
+We know that Composition is better than Inheritance ( as in "use Composition in favour of Inheritance") to vary the function of an object. DI is one of the mechanisms available to "compose" a usuable Client Object.
+
+Should we always use DI?
+Some advise to use DI unless there is a reason not to.....
+If the programming environment provides global objects, like "Document" in browser based Javascript, it seems
+wasteful to inject the "Dom" into client objects. Instead use it directly in the client as needed. However, if you
+want to fake the DoM for testing......
+Others prefer alternative approaches such as Service Locators ( but read on...)
+But both methods pass the responsibility for Dependency management (create, configure etc) to outside agencies.
+Both share the advantages of DI listed above a)..e) 
+
+"Inversion of Control" or IoC.
+"IoC" term is often used in place of DI as in "IoC Container".
+The "inversion of control" being referred to is that outlined in b) above.
+DI, unburdens the Client from the task of choosing, creating, configuring and deleting objects.
+Control over these tasks is passed from the Client to an external "party" ie inversion of control.
+
+How is DI implemented?
+Direct ways:
+i)   By passing the Dependencies as arguments to constructor of the Client - possibly with additional parameters.
+ii)  By creating the Client, and then using setter methods (with arguments and parameters).
+iii) By creating the Client, and then setting public properties of the Client (noooo!).
+
+More involved ways?
+These still boil down to either i) or ii) but the manner in which the Dependent objects are created externally
+is more involved.
+If the Client is a high level object and has several Dependencies, each of which may have Dependencies of its own
+and so on recursively, then we may need a special factory-like object to create the full "Dependency Graph".
+These are called "IoC Containers" and "Service Locators".
+
+Relationship to GoF Patterns? (GoF - gang of 4, authors of "Design Patterns")
+The most obvious Pattern is Abstract Factory. The Client object is passed an instantiated Factory object in its
+constructor (usually) which then creates - or otherwise makes available- the specific set of Dependent objects that the Client needs.
+In Factory Method, the Client has methods() that create the specific objects that it needs. In this case,
+its partal DI at best becasue the Client still has control over the lifecycle and possible parameterisation of its Dependants - not full Inversion of Control.
+
+"IOC Container" aka "DI Container":
+A DI Container is an object that knows how to instantiate and configure objects. And to be able to do its job, it needs to knows about the constructor arguments and the relationships between the objects.
+(quote stolen from http://fabien.potencier.org/do-you-need-a-dependency-injection-container.html).
+
+"Service Locator":
+The basic idea behind a service locator is to have an object that knows how to get hold of all of the services that an application might need.
+(quote stolen from https://martinfowler.com/articles/injection.html#UsingAServiceLocator).
+
+They look exactly the same right? 
+They are both objects that know how to build objects and dependency graphs and make those objects available to
+Client objects. The key difference seems to be this:
+- A DI Container makes the Dependencies and passes them to the Client (via constructor etc), while the Client does not know even of the existence of the DI Controller or its interface.
+- A Service Locator is passed to the Client (using DI method!) and the client is then free to ask for whatever
+objects the Service Locator can provide. The Service Locator can be as simple or complicated as needed, but the Client needs to know of its existance and its interface. The Client has control over the configuration and lifecycle of the Dependency, but is not concerned with the knowledge of how to compose the Dependency graph.
+
+Another way put ... its "Service location" Vs "Dependency Injection" NOT  "Service Locator" Vs "IOC Container"
+
+Here are some quotes...
+"Simply put: Don't use service location if you can avoid it."
+Becasue it create an invisible dependency (the Locactor) in the Client.
+(quote stolen from https://www.codeproject.com/Articles/386164/Get-injected-into-the-world-of-inverted-dependenci)
+This is J.Gauffin.  
+
+"Dependency Injection Containers are Code Polluters" and "And DI containers? In my opinion, they just add unnecessary noise" (Yegor Bugayenko at https://www.yegor256.com/2014/10/03/di-containers-are-evil.html). He argues the Containers are code overhead and large scale applications (at least) should be built with the appropriate tree/graph structure of "new" statements ...(like a once off hardcoded container?). I guess he is argueing against general purpose DI containers, where a lot of effort has to be expended initially to configure the container , in the language(API) of the container or via complex XML/JSON config files, to do exactly what his once off hard-coded approach is doing very clearly ane directly. 
+
+Historically, "Service Locators" may have evolved even prior to OOP, where applications kept a registry of network or internet based services, enabling applications ( based on user requests for example) could connect to those services when needed. On the other hand DI seems to have emerged from OOP and TDD (Test Driven Development) and is used extensively in most modern frameworks (Angular, cakePHP etc). However, they are now the same thing.
+
+From here in the article, I will use the term DI Container to mean "Service Locator or IOC Container".
+
+Should I make a DI Container, or import one that is publically available?
+From a learning perspective, its always better to start by building your own (IMHO).
+By doing this you REALLY know what it is and how to use it.
+See this article <https://www.sitepoint.com/how-to-build-your-own-dependency-injection-container/>
+You will also start to realise that the more general your container needs to be, the more complicated it can become. Published container objects may be feaure rich, but you have to learn their API to use them. Starting
+with a published API may reduce to recipe following, not the best way to learn basic principles.
+
+....however, when you really need a "DI Container" for a commercial or long life application, to be built and maintained by a team where people come and go... then you don't want every programmer to role their own! In this case buy a Container with a published stable API that is maintained by others (or role your own and mainatin it as a source controlled, actively managed, testable "component" of the system).
+
+Some examples of public "lighweight" containers in various languages:
+PicoContainer: <http://picocontainer.com/introduction.html> 	for Java
+google guice:  <https://github.com/google/guice> 		for Java V6 and later.
+InversifyJS:   <http://inversify.io/> 				for Javascript (TypeScript)
+BottleJS:      <https://github.com/young-steveo/bottlejs>	for Javascript (TypeScript)
+Autofac:       <http://autofac.readthedocs.io/en/latest/index.html> for Microsoft ,NET c# (I assume)
+Pimple:        <https://pimple.symfony.com> 			for PHP (by fabien.potencier author symphony)
+Hypodermic:    <https://github.com/ybainier/Hypodermic> 	for C++ 
+               (see also {boost].DI - C++ lib building DI containers)
+
+What happens if you ask a DI Container to create an object that has dependencies?
+You can tell the Container beforehand (somehow) about the dependencies ....or
+....the DI container may use Introspection and Reflection (ie examine the class at runtime and figure it out).
+For Java see this article <http://www2.sys-con.com/itsg/virtualcd/java/archives/0305/sagar2/index.html>
+For PHP see this article  <https://www.sitepoint.com/introspection-and-reflection-in-php/>
+For Javascript ... this is a prototype base language, and the base object is able to describe itself.
+                   without looking too deeply there is also the built-in "Reflect" object.
+
+If we are building a DI Container, we need:
+1) An API to register objects ... and possibly advise dependencies.
+2) Internally - A way to build a requested object and its dependencies
+3) An API to request new objects ...possibly parameterised
+4) Internally - A way to manage object lifecycle ...where applicable
+5) An API to destroy objects, or return to the container after use.
+6) An API to start and stop components ...if applicable.
+7) An API to configure the Container (eg how to manage lifecycle etc) if its a general purpose container.
+There well may be more ...
+
+Now that know:
+-Know what is DI and DI Containers
+-What they are for
+-That some people like them and other don't
+-They are used a lot by frameworks
+-A little on how they may be constructed...
+
+... the next step is to make "toy" versions in a few target languages (C++, PHP, Javascript)
+... then attempt to import and use some of the published Container objects.
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+  
+ 
+
+
+
