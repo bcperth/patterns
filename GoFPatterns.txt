@@ -1,7 +1,4 @@
-This folder contains tutorial material related to well know SW design patterns.
-There is one sub directory per pattern.
-Each subdirectory is named after its target pattern:
-A minimal implementation of each pattern is constructed, in PHP or nodel.js as far as possible, together with some explanatory notes.
+This is a summary of Patterns considered so far.
 
 Strategy: When one or more methods of a class (Component) can have multiple variations (strategies) eg sorting algorithms, the Strategy pattern allows you to "inject" the required mix of method implementations (strategies) into the constructor. All "strategies" implement the same Interface, but using different algorithms. 
 The Component contains references to objects that implement the desired interface. The references are initialised in the components constructor (dependency injection) and from then on the component will sort (or whatever) using the sort algorithm of the injected startegy object. 

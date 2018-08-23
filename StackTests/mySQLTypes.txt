@@ -1,0 +1,33 @@
+These are mySQL datatypes (as per mysql_com.h)
+see also http://www.peachpit.com/articles/article.aspx?p=1752305&seqNum=2
+
+Datatype				Enum	Max Value    		Display Width	Storage bytes
+					(hex)			        (includes sign)
+MYSQL_TYPE_DECIMAL, (m,d)		0X00
+MYSQL_TYPE_TINY  (int1)	(TINYINT)	0X01	256			4			1	
+MYSQL_TYPE_SHORT (int2) (SMALLINT)	0X02	65536			6			3
+MYSQL_TYPE_LONG, (int3)	(MEDIUMINT)	0X03	4294967296		11			4		
+MYSQL_TYPE_FLOAT,(len,dec),(Float4)	0X04				12			4
+MYSQL_TYPE_DOUBLE(len,dec),(Float8)	0X05				22			8			
+MYSQL_TYPE_NULL,			0X06   
+MYSQL_TYPE_TIMESTAMP,			0X07				YYYYMMDDHHMMSS		4		
+MYSQL_TYPE_LONGLONG,(int4)(INT)(BIGINT)	0X08	18446744073709551616	21			16	
+MYSQL_TYPE_INT24,			0X09			
+MYSQL_TYPE_DATE,			0X0A 				YYYY-MM-DD		3  
+MYSQL_TYPE_TIME,			0X0B				HH:MM:SS		3
+MYSQL_TYPE_DATETIME,			0X0C 				YYYY-MM-DD HH:MM:SS	8
+MYSQL_TYPE_YEAR,			0X0D			
+MYSQL_TYPE_NEWDATE,			0X0E 
+MYSQL_TYPE_VARCHAR(len),		0X0F	65536 chars		len			Len +1or2			
+MYSQL_TYPE_BIT,				0X10 
+                   
+MYSQL_TYPE_NEWDECIMAL=246,		0XF6			
+MYSQL_TYPE_ENUM=247,			0XF7							1 or 2			
+MYSQL_TYPE_SET=248,			0XF8							1, 2, 3, 4, or 8 		
+MYSQL_TYPE_TINY_BLOB=249,		0XF9			
+MYSQL_TYPE_MEDIUM_BLOB=250,		0XFA			
+MYSQL_TYPE_LONG_BLOB=251,		0XFB			
+MYSQL_TYPE_BLOB=252,			0XFC			
+MYSQL_TYPE_VAR_STRING (varchar(len))	0XFD			
+MYSQL_TYPE_STRING    (char(len-fixed))	0XFE
+MYSQL_TYPE_GEOMETRY=255			0XFF

@@ -43,11 +43,12 @@ The "inversion of control" being referred to is that outlined in b) above.
 DI, unburdens the Client from the task of choosing, creating, configuring and deleting objects.
 Control over these tasks is passed from the Client to an external "party" ie inversion of control.
 
-How is DI implemented?
+How is DI implemented? How do you actually inject one object into another?
 Direct ways:
 i)   By passing the Dependencies as arguments to constructor of the Client - possibly with additional parameters.
 ii)  By creating the Client, and then using setter methods (with arguments and parameters).
 iii) By creating the Client, and then setting public properties of the Client (noooo!).
+"As a rule of thumb, constructor injection is best for required dependencies, and setter injection is best for optional dependencies" Fabien Potencier.
 
 More involved ways?
 These still boil down to either i) or ii) but the manner in which the Dependent objects are created externally
@@ -105,9 +106,13 @@ PicoContainer: 	<http://picocontainer.com/introduction.html> 	for Java
 google guice:  	<https://github.com/google/guice> 		for Java V6 and later.
 InversifyJS:   	<http://inversify.io/> 				for Javascript (TypeScript)
 BottleJS:      	<https://github.com/young-steveo/bottlejs>	for Javascript (TypeScript)
-Autofac:       	<http://autofac.readthedocs.io/en/latest/index.html> for Microsoft ,NET c# (I assume)
 Pimple:        	<https://pimple.symfony.com> 			for PHP (by fabien.potencier author symphony)
-Auryn:		<https://github.com/rdlowrey/auryn>             for PHP 
+PHP-DI		<http://php-di.org/>				for PHP 
+Auryn:		<https://github.com/rdlowrey/auryn>             for PHP
+Unity: 		<https://github.com/unitycontainer/unity>	for C# .NET
+Autofac:       	<http://autofac.readthedocs.io/en/latest/index.html> for .NET C# 
+Ninject:	<http://www.ninject.org/learn.html>		for .NET C# 
+Castel Windsor:	<http://www.castleproject.org/projects/windsor/>for .NET C#
 Hypodermic:     <https://github.com/ybainier/Hypodermic> 	for C++ 
                (see also {boost].DI - C++ lib building DI containers)
 

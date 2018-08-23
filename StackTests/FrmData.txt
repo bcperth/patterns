@@ -1,0 +1,79 @@
+        self.general_data = {
+            'frm_version': header[0],
+            'legacy_db_type': engine_name,
+            'IO_SIZE': header[4],
+            'length': header[6],
+            'tmp_key_length': header[7],
+            'rec_length': header[8],
+            'max_rows': header[10],
+            'min_rows': header[11],
+            'db_create_pack': header[12] >> 8,  # only want 1 byte
+            'key_info_length': header[13],
+            'create_options': header[14],
+            'frm_file_ver': header[16],
+            'avg_row_length': header[17],
+            'default_charset': header[18],
+            'row_type': header[20],
+            'charset_low': header[21],
+            'table_charset': (header[21] << 8) + header[18],
+            'key_length': header[24],
+            'MYSQL_VERSION_ID': header[25],
+            'extra_size': header[26],
+            'default_part_eng': header[29],
+            'key_block_size': header[30],
+
+        """Read key fields from the file
+        offset = self.general_data['IO_SIZE']
+
+        """Read the table comments.
+        # Fields can be found 1 IO_SIZE more than what has been read to date
+        # plus 46 bytes.
+        io_size = self.general_data['IO_SIZE']
+        record_offset = io_size + self.general_data['tmp_key_length'] + \
+            self.general_data['rec_length']
+        offset = (((record_offset / io_size) + 1) * io_size) + 46
+
+        """Read the default values for all columns
+        offset = self.general_data['IO_SIZE'] + \
+            self.general_data['tmp_key_length']
+
+        """Read the storage engine data.
+        # We must calculate the location of the partition information by
+        # locating the storage engine name and if it is 'partition' then read
+        # the partition string following that.
+
+        offset = self.general_data['IO_SIZE'] + \
+            self.general_data['tmp_key_length'] + \
+            self.general_data['rec_length']
+
+        """Read the column information from the file.
+        This method builds the list of columns including defaults,
+        data type, and determines enum and set values.
+        # Fields can be found 1 IO_SIZE more than what has been read to date
+        # plus 258 bytes.
+        io_size = self.general_data['IO_SIZE']
+        record_offset = io_size + self.general_data['tmp_key_length'] + \
+            self.general_data['rec_length']
+        offset = (((record_offset / io_size) + 1) * io_size) + 258
+
+        self.col_metadata = {
+            'num_cols': data[0],
+            'pos': data[1],
+            'unknown': data[2],
+            'n_length': data[3],
+            'interval_count': data[4],
+            'interval_parts': data[5],
+            'int_length': data[6],
+            'com_length': data[8],
+            'null_fields': data[12],
+        }
+
+
+
+
+
+
+
+
+
+

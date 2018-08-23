@@ -1,0 +1,14 @@
+Visitor
+
+Lets say you have a "object structure" like a tree or whatever, whose elements are sub-classes of some base class - ie implement a common interface. There are a trillion examples of this, and its not unusual to traverse the structure, exercising the methods of the elements as you go.
+
+A typical example of this is a parse-tree constructed by an arithmetic expression parser. When the tree is constructed you might invoke evaluate() on the head element and it would traverse the tree invoking evaluate() recursively through the tree to reach the result of the expression.
+
+Now suppose you wanted to do something else with the tree, but unfortunately the elements do not have methods to support what you want to do. Enter Visitor, which involves adding a additional "programmable" method called accept() to every element.
+
+We also need a separate Visitor object, one for each new "algorithm" we want to implement. Each Visitor object must implement a visit(NodeType n) method for each subclass of element. Meaning the new processing on each node, will depend of the type of the node visited.
+
+Then you traverse the tree calling the accept(XVisitor vis) method in each element. The accept() method in turn invokes the vis->visit(this) passing a reference to itself back to the Visitor, which finally invokes the correct version of visit() for that node type.
+
+So if your element objects are set up from the start to include the "programmable" accept() method, then you can do what the Visitor pattern promises - lets you "define a new operation without changing the classes of the elements on which it operates".
+
